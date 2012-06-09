@@ -124,6 +124,7 @@ public class SensorReader implements SensorEventListener {
         // DEBUG ONLY
         //Log.i("SensorReader", entry.timestamp + ":" + String.valueOf(entry.value) + ", steps: "
         //		+ String.valueOf(steps));
+        /*
         try {
         	mLogStream = new FileWriter(mLogFile, true);
             mLogStream.write(entry.timestamp + "," + String.valueOf(entry.value) + ","
@@ -133,7 +134,7 @@ public class SensorReader implements SensorEventListener {
             mLogStream.close();
         } catch(IOException e) {
             Log.e("SensorReader", "Could not write file " + e.getMessage()); 
-        }
+        }*/
 	}
 	
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
@@ -205,7 +206,7 @@ public class SensorReader implements SensorEventListener {
 			int seconds = (int)(System.currentTimeMillis() / 1000) % 60; // seconds since 1970
 			if ((seconds % 2) == 0) {
 				mStepChangeListener.onStepChanged(steps);
-				Log.i("StepChangeListener", "onChanged");
+				//Log.i("StepChangeListener", "onChanged");
 			}
 			
 			mSensorValues.poll();
