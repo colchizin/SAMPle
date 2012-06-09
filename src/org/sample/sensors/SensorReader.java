@@ -43,6 +43,9 @@ public class SensorReader implements SensorEventListener {
     private final int mWindowSizeMovingAverage = 100;
     private final double mTimeInterval = 10; // in seconds
     private final float mGravityThreshold = 120; // g = 9.8 ; g^2 ca. 100 
+    private final double mStepSendInterval = 2; // in seconds
+    
+    private long mLastChangedSend;
     
     // TO DEBUG
     private File mLogFile;
@@ -66,9 +69,12 @@ public class SensorReader implements SensorEventListener {
         // alpha for EWMA
         mExponentialMovingAverage = 100; // g = 9.81 => g^2 ca. 100
         
+        // timestamp for last StepChanged::onStepChanged
+        mLastChangedSend = 0;
+        
         // DEBUG
-        File root = Environment.getExternalStorageDirectory();
-        mLogFile = new File(root, "sensordata.csv");
+        //File root = Environment.getExternalStorageDirectory();
+        //mLogFile = new File(root, "sensordata.csv");
     }
     
     /**
@@ -203,8 +209,9 @@ public class SensorReader implements SensorEventListener {
 			steps /= 2; // 2 Null-Durchgänge je Schritt
 			steps *= (int)Math.ceil(60/mTimeInterval);
 			
-			int seconds = (int)(System.currentTimeMillis() / 1000) % 60; // seconds since 1970
-			if ((seconds % 2) == 0) {
+			long currentTimeStamp = System.currentTimeMillis();
+			if ( ((currentTimeStamp - mLastChangedSend) / 1000 ) > mStepSendInterval) {
+				mLastChangedSend = currentTimeStamp;
 				mStepChangeListener.onStepChanged(steps);
 				//Log.i("StepChangeListener", "onChanged");
 			}
