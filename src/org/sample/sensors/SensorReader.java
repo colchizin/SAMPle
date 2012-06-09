@@ -1,5 +1,7 @@
 package org.sample.sensors;
 
+import org.sample.sensors.StepChangeListener;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -32,6 +34,7 @@ public class SensorReader implements SensorEventListener {
     
     private final SensorManager mSensorManager;
     private final Sensor mAccelerometer;
+    private final StepChangeListener mStepChangeListener;
     private LinkedList<SensorData> mSensorValues;
     private Context mContext;
     
@@ -39,6 +42,7 @@ public class SensorReader implements SensorEventListener {
     private final float mAlpha = (float) 0.2;
     private final int mWindowSizeMovingAverage = 100;
     private final double mTimeInterval = 10; // in seconds
+    private final float mGravityThreshold = 120; // g = 9.8 ; g^2 ca. 100 
     
     // TO DEBUG
     private File mLogFile;
@@ -47,7 +51,7 @@ public class SensorReader implements SensorEventListener {
     /**
      * Ctor
      */
-    public SensorReader(Context context) {
+    public SensorReader(Context context, StepChangeListener listener) {
     	// create own context to access sensor service
     	mContext = context; 
     	// access sensors
@@ -56,6 +60,8 @@ public class SensorReader implements SensorEventListener {
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         // create mSensorValues array
         mSensorValues = new LinkedList<SensorData>();
+        // listener
+        mStepChangeListener = listener;
         
         // alpha for EWMA
         mExponentialMovingAverage = 100; // g = 9.81 => g^2 ca. 100
@@ -101,7 +107,7 @@ public class SensorReader implements SensorEventListener {
         			   event.values[1]*event.values[1] + // y
         			   event.values[2]*event.values[2]; // z
         
-        Log.i("mean", String.valueOf(scalar));
+        //Log.i("mean", String.valueOf(scalar));
         
         SensorData entry = new SensorData();
         entry.timestamp = event.timestamp;
@@ -116,8 +122,8 @@ public class SensorReader implements SensorEventListener {
         int steps=countSteps();
         
         // DEBUG ONLY
-        Log.i("SensorReader", entry.timestamp + ":" + String.valueOf(entry.value) + ", steps: "
-        		+ String.valueOf(steps));
+        //Log.i("SensorReader", entry.timestamp + ":" + String.valueOf(entry.value) + ", steps: "
+        //		+ String.valueOf(steps));
         try {
         	mLogStream = new FileWriter(mLogFile, true);
             mLogStream.write(entry.timestamp + "," + String.valueOf(entry.value) + ","
@@ -151,7 +157,7 @@ public class SensorReader implements SensorEventListener {
 		for (int i=start; i < n; ++i) {
 		   sum += mSensorValues.get(i).value;
 		}
-		return ((float)(sum/n));
+		return ((float)(sum/(n-start)));
 	}
 	
 	/**
@@ -170,17 +176,8 @@ public class SensorReader implements SensorEventListener {
 		float pre = mExponentialMovingAverage - movingAverage;
 		float post = ewma(mSensorValues.get(n-1).value) - movingAverage;
 		
-		/*
-		float pre = 0;
-		float post = 0;
-		
-		if (n > 2) {
-			pre = (float)(Math.sin((double)(mSensorValues.get(n-2).timestamp / 1000000000)));
-			post = (float)(Math.sin((double)(mSensorValues.get(n-1).timestamp / 1000000000)));
-		}
-		*/
-		
-		mSensorValues.get(n-1).sign = Math.abs(( Math.abs(pre+post) - Math.abs(pre) - Math.abs(post) )) > 0.001;
+		mSensorValues.get(n-1).sign = Math.abs(( Math.abs(pre+post) - Math.abs(pre) - Math.abs(post) )) > 0.001 &&
+				movingAverage > mGravityThreshold;
 	}
 	
 	/**
@@ -192,17 +189,25 @@ public class SensorReader implements SensorEventListener {
 		double deltaTime = mSensorValues.get(n-1).timestamp - mSensorValues.get(0).timestamp;
 		deltaTime /= 1000000000; // nanosec -> sec
 		
-		Log.i("deltaTime", String.valueOf(deltaTime));
-		Log.i("n", String.valueOf(n));
+		//Log.i("deltaTime", String.valueOf(deltaTime));
+		//Log.i("n", String.valueOf(n));
 		
 		if (deltaTime > mTimeInterval) {
-			Log.i("> mTimeInterval", String.valueOf(deltaTime));
+			//Log.i("> mTimeInterval", String.valueOf(deltaTime));
 			for (int i=0; i<n; ++i) {
 				if (mSensorValues.get(i).sign) {
 					steps+=1;
 				}
 			}
+			steps /= 2; // 2 Null-Durchgänge je Schritt
 			steps *= (int)Math.ceil(60/mTimeInterval);
+			
+			int seconds = (int)(System.currentTimeMillis() / 1000) % 60; // seconds since 1970
+			if ((seconds % 2) == 0) {
+				mStepChangeListener.onStepChanged(steps);
+				Log.i("StepChangeListener", "onChanged");
+			}
+			
 			mSensorValues.poll();
 		}
 		return steps;
