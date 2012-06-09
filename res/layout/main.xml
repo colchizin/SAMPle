@@ -50,21 +50,21 @@
         android:gravity="center_horizontal" >
 
         <ImageButton
-            android:id="@+id/imageButton1"
-            android:layout_width="0dip"
-            android:layout_height="110dp"
-            android:layout_gravity="bottom"
-            android:layout_marginLeft="5dp"
-            android:layout_weight="0.83"
-            android:src="@android:drawable/ic_media_pause" />
-
-        <ImageButton
-            android:id="@+id/imageButton2"
+            android:id="@+id/button_pause"
             android:layout_width="0dip"
             android:layout_height="110dp"
             android:layout_gravity="bottom"
             android:layout_marginRight="5dp"
             android:layout_weight="0.83"
+            android:src="@android:drawable/ic_media_pause" />
+
+        <ImageButton
+            android:id="@+id/button_skip"
+            android:layout_width="0dip"
+            android:layout_height="110dp"
+            android:layout_gravity="bottom"
+            android:layout_marginRight="5dp"
+            android:layout_weight="0.83"            
             android:src="@android:drawable/ic_media_next" />
 
     </LinearLayout>
