@@ -2,40 +2,71 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:gravity="center_horizontal"
+    android:gravity="bottom|center_horizontal"
     android:orientation="vertical" >
 
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
+        android:layout_height="0dip"
+        android:layout_weight="0.99"
+        android:orientation="vertical" >
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:gravity="right" >
+
+            <ImageView
+                android:id="@+id/imageView1"
+                android:layout_width="60dp"
+                android:layout_height="match_parent"
+                android:layout_marginRight="5dp"
+                android:layout_marginTop="2dp"
+                android:src="@drawable/turntable" />
+
+            <ImageView
+                android:id="@+id/runner"
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="5dp"
+                android:src="@drawable/runner" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <SeekBar
+        android:id="@+id/seekBar1"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="305dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:gravity="center_horizontal"
-        android:text="@string/start_name"
-        android:textColor="@android:color/primary_text_dark"
-        android:textSize="48sp" />
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp" />
 
-    <ImageView
-        android:id="@+id/imageView1"
-        android:layout_width="109dp"
-        android:layout_height="250dp"
-        android:layout_marginTop="15dp"
-        android:scaleType="fitStart"
-        android:src="@drawable/sample_logo" />
-
-    <Button
-        android:id="@+id/button_go"
-        android:layout_width="89dp"
-        android:layout_height="73dp"
-        android:onClick="onbutton_go"
-        android:text="@string/go" />
-
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:gravity="center_horizontal"
-        android:text="@string/start_instruction"
-        android:textColor="@android:color/primary_text_dark"
-        android:textSize="11sp" />
+        android:layout_height="118dp"
+        android:gravity="center_horizontal" >
+
+        <ImageButton
+            android:id="@+id/imageButton1"
+            android:layout_width="0dip"
+            android:layout_height="110dp"
+            android:layout_gravity="bottom"
+            android:layout_marginLeft="5dp"
+            android:layout_weight="0.83"
+            android:src="@android:drawable/ic_media_pause" />
+
+        <ImageButton
+            android:id="@+id/imageButton2"
+            android:layout_width="0dip"
+            android:layout_height="110dp"
+            android:layout_gravity="bottom"
+            android:layout_marginRight="5dp"
+            android:layout_weight="0.83"
+            android:src="@android:drawable/ic_media_next" />
+
+    </LinearLayout>
 
 </LinearLayout>
