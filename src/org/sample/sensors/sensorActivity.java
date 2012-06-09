@@ -15,5 +15,6 @@ public class sensorActivity extends Activity {
         mSensorReader.start();
         TextView textView = (TextView)findViewById(R.id.textView);
         
+        
     }
 }
