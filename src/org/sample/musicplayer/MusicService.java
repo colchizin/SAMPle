@@ -12,6 +12,7 @@ import org.sample.musicfiles.MusicFileDatasource;
 import org.sample.sensors.SensorReader;
 import org.sample.sensors.StepChangeListener;
 
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.ComponentName;
@@ -45,6 +46,15 @@ public class MusicService extends Service implements
     
     MusicFile mNextFile = null;
     SensorReader mSensorReader;
+    
+    public static final int notificationID = 1;
+    
+    int lastBPM;
+    long lastChangeTimestamp;
+    boolean mLocked = false;
+    
+    final int songSwitchThreshold = 30000;
+    final float stepThreshold = 0.1f;
     
     // The component name of MusicIntentReceiver, for use with media button and remote control
     // APIs
@@ -85,26 +95,18 @@ public class MusicService extends Service implements
     
     public int onStartCommand(Intent intent, int flags, int startid) { 
     	Log.i(TAG, "debug: startup service");
-    	return START_STICKY;
-    }
-    
-    public void onCreate() {
-        Log.i(TAG, "debug: Creating service");
-
-        mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+    	
+    	mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         mAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         mSensorReader = new SensorReader(this,this);
         datasource = new MusicFileDatasource(this);
         mSensorReader.start();
-        
-        /*(new FindMusicFilesTask(
-				this.datasource,
-				null,
-				this
-		)).execute();	*/
-        
-        // Create the retriever and start an asynchronous task that will prepare it.
-        // TODO:
+    	
+    	return this.START_NOT_STICKY;
+    }
+    
+    public void onCreate() {
+        Log.i(TAG, "debug: Creating service");
         
         //mMediaButtonReceiverComponent = new ComponentName(this, MusicIntentReceiver.class);
     }
@@ -153,6 +155,7 @@ public class MusicService extends Service implements
 			try {
 				mMediaPlayer.setDataSource(mNextFile.getFilename());
 				mMediaPlayer.prepareAsync();
+				mLocked = false;
 			} catch (IllegalArgumentException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -168,10 +171,33 @@ public class MusicService extends Service implements
 
 	@Override
 	public void onStepChanged(int bpm) {
+		if (mLocked)
+			return;
+		
+		mLocked = true;
+		int lowerThreshold = Math.round(this.lastBPM*(1-this.stepThreshold));
+		int upperThreshold = Math.round(this.lastBPM*(1+this.stepThreshold));
+		long now = System.currentTimeMillis();
+		
+		if ((now-this.lastChangeTimestamp) < this.songSwitchThreshold) {
+			Log.d(TAG, "Too little Time has passed. " + Math.round((now-this.lastChangeTimestamp)/1000) + "s");
+			mLocked = false;
+			return;
+		}
+			
+		if (bpm <= upperThreshold && bpm >= lowerThreshold) {
+			Log.d(TAG, "Step not sufficiently changed. " + bpm + " " + upperThreshold + " " + lowerThreshold);
+			mLocked = false;
+			return;
+		}
+			
 		Log.d(TAG, "Step Changed: " + bpm);
+		this.lastBPM = bpm;
+		this.lastChangeTimestamp = now;
+		
 		(new FindMusicFilesTask(
 				this.datasource,
-				MusicFileDBHelper.getBPMCondition(bpm, 10),
+				null, //MusicFileDBHelper.getBPMCondition(bpm, 10),
 				this
 		)).execute();
 	}
