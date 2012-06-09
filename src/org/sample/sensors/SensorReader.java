@@ -42,7 +42,7 @@ public class SensorReader implements SensorEventListener {
     private final float mAlpha = (float) 0.2;
     private final int mWindowSizeMovingAverage = 100;
     private final double mTimeInterval = 10; // in seconds
-    private final float mGravityThreshold = 120; // g = 9.8 ; g^2 ca. 100 
+    private final float mGravityThreshold = 110; // g = 9.8 ; g^2 ca. 100 
     private final double mStepSendInterval = 2; // in seconds
     
     private long mLastChangedSend;
@@ -143,8 +143,11 @@ public class SensorReader implements SensorEventListener {
         }*/
 	}
 	
+    /**
+     * only needed to fit interface implementation needs
+     */
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
-		// TODO
+		// not needed
 	}
 	
 	/**
@@ -209,6 +212,7 @@ public class SensorReader implements SensorEventListener {
 			steps /= 2; // 2 Null-Durchgänge je Schritt
 			steps *= (int)Math.ceil(60/mTimeInterval);
 			
+			// don't send every change
 			long currentTimeStamp = System.currentTimeMillis();
 			if ( ((currentTimeStamp - mLastChangedSend) / 1000 ) > mStepSendInterval) {
 				mLastChangedSend = currentTimeStamp;
