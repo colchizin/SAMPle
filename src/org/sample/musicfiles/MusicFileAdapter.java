@@ -21,22 +21,19 @@ public class MusicFileAdapter extends BaseAdapter {
 		this.mActivity = activity;
 	}
 	
-	@Override
 	public int getCount() {
 		return mFiles.size();
 	}
 
-	@Override
+	
 	public Object getItem(int idx) {
 		return mFiles.get(idx);
 	}
 
-	@Override
 	public long getItemId(int position) {
 		return 0;
 	}
 
-	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
 		if (convertView == null) {
 			LayoutInflater inflater = mActivity.getLayoutInflater();

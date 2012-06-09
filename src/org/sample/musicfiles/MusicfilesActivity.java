@@ -55,7 +55,6 @@ public class MusicfilesActivity extends ListActivity implements
 		(new FindMusicFilesTask(pDatasource, MusicFileDBHelper.getBPMCondition(125, 10), this)).execute();
 	}
 
-	@Override
 	public void onMusicFilesFound(List<MusicFile> files) {
 		pProgressDialog.dismiss();
 		if (files.size() > 0) {
