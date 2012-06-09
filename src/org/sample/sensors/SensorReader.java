@@ -3,8 +3,6 @@ package org.sample.sensors;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedList;
 
 import android.content.Context;
@@ -27,20 +25,20 @@ public class SensorReader implements SensorEventListener {
 	 *
 	 */
 	public class SensorData {
+		public boolean sign;
 		public long timestamp;
 		public float value;
 	};
     
     private final SensorManager mSensorManager;
     private final Sensor mAccelerometer;
-    private ArrayList<SensorData> mSensorValues;
+    private LinkedList<SensorData> mSensorValues;
     private Context mContext;
     
     private float mExponentialMovingAverage;
     private final float mAlpha = (float) 0.2;
-    private final float mMaxListSize = 100;
-    
-    private LinkedList<Float> mDataList;
+    private final int mWindowSizeMovingAverage = 100;
+    private final double mTimeInterval = 10; // in seconds
     
     // TO DEBUG
     private File mLogFile;
@@ -57,12 +55,10 @@ public class SensorReader implements SensorEventListener {
         // access only acceleration sensor
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         // create mSensorValues array
-        mSensorValues = new ArrayList<SensorData>();
+        mSensorValues = new LinkedList<SensorData>();
         
         // alpha for EWMA
         mExponentialMovingAverage = 100; // g = 9.81 => g^2 ca. 100
-        // data list
-        mDataList = new LinkedList<Float>();
         
         // DEBUG
         File root = Environment.getExternalStorageDirectory();
@@ -105,20 +101,7 @@ public class SensorReader implements SensorEventListener {
         			   event.values[1]*event.values[1] + // y
         			   event.values[2]*event.values[2]; // z
         
-        // EWMA
-        mExponentialMovingAverage = mAlpha * scalar + (1-mAlpha) * mExponentialMovingAverage;
-        
-        // moving average for last n values
-        mDataList.add(scalar);
-        
         Log.i("mean", String.valueOf(scalar));
-        
-        // const window size for moving average 
-        while (mDataList.size() > mMaxListSize) {
-        	mDataList.poll();
-        }
-        
-        float movingAverage = mean(mDataList);
         
         SensorData entry = new SensorData();
         entry.timestamp = event.timestamp;
@@ -126,15 +109,21 @@ public class SensorReader implements SensorEventListener {
         
         mSensorValues.add(entry);
         
+        // const window size for moving average 
+        float movingAverage = movingMean();
+        checkSignChange(movingAverage);
+        
+        int steps=countSteps();
+        
         // DEBUG ONLY
-        Log.i("SensorReader", entry.timestamp + ":" + String.valueOf(entry.value) 
-        		+ "," + String.valueOf(mExponentialMovingAverage)
-        		+ "," + String.valueOf(movingAverage));
+        Log.i("SensorReader", entry.timestamp + ":" + String.valueOf(entry.value) + ", steps: "
+        		+ String.valueOf(steps));
         try {
         	mLogStream = new FileWriter(mLogFile, true);
-            mLogStream.write(entry.timestamp + "," + String.valueOf(entry.value)
-        		+ "," + String.valueOf(mExponentialMovingAverage)
-        		+ "," + String.valueOf(movingAverage) + "\n");
+            mLogStream.write(entry.timestamp + "," + String.valueOf(entry.value) + ","
+            		+ String.valueOf(mExponentialMovingAverage) + ","
+            		+ String.valueOf(movingAverage) + ","
+            		+ String.valueOf(steps) + "\n");
             mLogStream.close();
         } catch(IOException e) {
             Log.e("SensorReader", "Could not write file " + e.getMessage()); 
@@ -146,13 +135,6 @@ public class SensorReader implements SensorEventListener {
 	}
 	
 	/**
-	 *	get collected sensor scalar data 
-	 */
-	public ArrayList<SensorData> sensorValues() {
-		return mSensorValues;
-	}
-
-	/**
 	 *	clear stored sensor data
 	 */
 	public void clear() {
@@ -160,14 +142,69 @@ public class SensorReader implements SensorEventListener {
 	}
 	
 	/**
-	 * calculate mean
+	 * calculate movingMean
 	 */
-	private float mean(LinkedList<Float> list) {
-		Iterator<Float> i = list.iterator();
+	private float movingMean() {
 		Float sum = (float)0;
-		while (i.hasNext()) {
-		   sum += i.next();
+		int n = mSensorValues.size();
+		int start = n > mWindowSizeMovingAverage ? n-mWindowSizeMovingAverage : 0; 
+		for (int i=start; i < n; ++i) {
+		   sum += mSensorValues.get(i).value;
 		}
-		return ((float)(sum/(list.size())));
+		return ((float)(sum/n));
+	}
+	
+	/**
+	 * calculate exponential weighted moving average
+	 */
+	private float ewma(float scalar) {
+        mExponentialMovingAverage = mAlpha * scalar + (1-mAlpha) * mExponentialMovingAverage;
+        return mExponentialMovingAverage;
+	}
+	
+	/**
+	 * check sign change
+	 */
+	private void checkSignChange(float movingAverage) {
+		int n = mSensorValues.size();
+		float pre = mExponentialMovingAverage - movingAverage;
+		float post = ewma(mSensorValues.get(n-1).value) - movingAverage;
+		
+		/*
+		float pre = 0;
+		float post = 0;
+		
+		if (n > 2) {
+			pre = (float)(Math.sin((double)(mSensorValues.get(n-2).timestamp / 1000000000)));
+			post = (float)(Math.sin((double)(mSensorValues.get(n-1).timestamp / 1000000000)));
+		}
+		*/
+		
+		mSensorValues.get(n-1).sign = Math.abs(( Math.abs(pre+post) - Math.abs(pre) - Math.abs(post) )) > 0.001;
+	}
+	
+	/**
+	 * count steps
+	 */
+	private int countSteps() {
+		int steps=0;
+		int n = mSensorValues.size();
+		double deltaTime = mSensorValues.get(n-1).timestamp - mSensorValues.get(0).timestamp;
+		deltaTime /= 1000000000; // nanosec -> sec
+		
+		Log.i("deltaTime", String.valueOf(deltaTime));
+		Log.i("n", String.valueOf(n));
+		
+		if (deltaTime > mTimeInterval) {
+			Log.i("> mTimeInterval", String.valueOf(deltaTime));
+			for (int i=0; i<n; ++i) {
+				if (mSensorValues.get(i).sign) {
+					steps+=1;
+				}
+			}
+			steps *= (int)Math.ceil(60/mTimeInterval);
+			mSensorValues.poll();
+		}
+		return steps;
 	}
 };
