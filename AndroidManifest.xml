@@ -23,7 +23,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".sensors.sensorActivity">
+        <activity android:name=".sensors.sensorActivity"
+            android:configChanges="orientation"
+    		android:screenOrientation="portrait">
             <intent-filter>
                 <category android:name="android.intent.category.LAUNCHER"/>
                 <action android:name="android.intent.action.PICK"/>
