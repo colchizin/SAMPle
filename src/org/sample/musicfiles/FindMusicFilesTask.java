@@ -21,6 +21,7 @@ import java.util.List;
 import org.sample.musicfiles.MusicFileDatasource;
 
 import android.os.AsyncTask;
+import android.util.Log;
 
 /**
  * Asynchronous task that prepares a MusicRetriever. This asynchronous task essentially calls
@@ -55,4 +56,5 @@ public class FindMusicFilesTask extends AsyncTask<Void, Void, Void> {
     public interface MusicFilesFoundListener {
         public void onMusicFilesFound(List<MusicFile> files);
     }
+    
 }

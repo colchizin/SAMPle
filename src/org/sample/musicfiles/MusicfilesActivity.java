@@ -1,14 +1,17 @@
 package org.sample.musicfiles;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.List;
 
 import org.sample.musicfiles.musicretriever.MusicRetriever;
 import org.sample.musicfiles.musicretriever.MusicRetriever.Item;
 import org.sample.musicfiles.musicretriever.IndexMusicFilesTask;
+import org.sample.musicplayer.MusicService;
 
 import android.app.ListActivity;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.os.Bundle;
@@ -33,7 +36,11 @@ public class MusicfilesActivity extends ListActivity implements
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
-		pDatasource = new MusicFileDatasource(this);
+		Intent intent = new Intent();
+		intent.setAction("org.sample.musicplayer.MusicService");
+		startService(intent);
+		
+		/*pDatasource = new MusicFileDatasource(this);
 		
 		MusicFileDBHelper helper = new MusicFileDBHelper(this);
 		//helper.onUpgrade(MusicFileDBHelper.getDatabase(),1,1);
@@ -45,7 +52,7 @@ public class MusicfilesActivity extends ListActivity implements
 		//onMusicFilesFound(pDatasource.findAll(false));
 		//(new IndexMusicFilesTask(pDatasource, this)).execute();
 		//(new FindMusicFilesTask(pDatasource, MusicFileDBHelper.getBPMCondition(125, 10), this)).execute();
-		(new FindMusicFilesTask(pDatasource, null, this)).execute();
+		(new FindMusicFilesTask(pDatasource, null, this)).execute();*/
 	}
 
 
