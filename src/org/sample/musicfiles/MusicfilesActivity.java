@@ -33,7 +33,7 @@ public class MusicfilesActivity extends ListActivity implements
 		(new PrepareMusicRetrieverTask(pRetriever, this)).execute();
 	}
 
-	@Override
+
 	public void onMusicRetrieverPrepared() {
 		List<Item> items = pRetriever.getItems();
 		String[] titles = new String[items.size()];

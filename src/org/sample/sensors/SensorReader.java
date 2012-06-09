@@ -46,7 +46,7 @@ public class SensorReader implements SensorEventListener {
         mSensorManager.unregisterListener(this);
     }
     
-	@Override
+
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() != Sensor.TYPE_ACCELEROMETER)
             return;
@@ -57,7 +57,7 @@ public class SensorReader implements SensorEventListener {
         mSensorValues.add(Float.valueOf(scalar));
 	}
 	
-	@Override
+    
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
 		// TODO
 	}
