@@ -9,8 +9,9 @@ public abstract class MusicFile {
 	public HashMap<String,String>	tags;	// Assoziative Liste zum Speichern der ID3-Tags
 	
 	protected String	filename;
-	protected int		id;
+	protected long		id;
 	protected int		filetype;
+	protected int		bpm;
 	
 	/*
 	 * Der Konstruktor setzt den Dateinamen fest.
@@ -35,7 +36,9 @@ public abstract class MusicFile {
 	 * @return	Wert des Tags oder null
 	 */
 	public Object getTag(String tagname) {
-		return tags.get(tagname);
+		if (tags != null)
+			return tags.get(tagname);
+		return null;
 	}
 	
 	/*
@@ -46,15 +49,23 @@ public abstract class MusicFile {
 		return filename;
 	}
 	
+	public int getFiletype() {
+		return filetype;
+	}
+
+	public void setFiletype(int filetype) {
+		this.filetype = filetype;
+	}
+
 	public void setFilename(String filename) {
 		this.filename = filename;
 	}
 	
-	public int getId() {
+	public long getId() {
 		return this.id;
 	}
 	
-	public void setId(int id) {
+	public void setId(long id) {
 		this.id = id;
 	}
 	

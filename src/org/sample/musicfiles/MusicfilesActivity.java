@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.sample.musicfiles.musicretriever.MusicRetriever;
 import org.sample.musicfiles.musicretriever.MusicRetriever.Item;
-import org.sample.musicfiles.musicretriever.PrepareMusicRetrieverTask;
+import org.sample.musicfiles.musicretriever.IndexMusicFilesTask;
 
 import android.app.ListActivity;
 import android.os.Bundle;
@@ -12,35 +12,40 @@ import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
-import android.R;;
+import android.R;
 
 public class MusicfilesActivity extends ListActivity implements
-	PrepareMusicRetrieverTask.MusicRetrieverPreparedListener
+	IndexMusicFilesTask.MusicFileDatasourceIndexedListener
 {
 	public String[] test = {"Hallo", "Welt", "Die", "dritte"};
 	
 	public static final String TAG = "MusicfilesActivity";
 	
 	protected MusicRetriever pRetriever = null;
+	protected MusicFileDatasource pDatasource = null;
 	
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
-		pRetriever = new MusicRetriever(this.getContentResolver());
+		pDatasource = new MusicFileDatasource(this);
 		
+		MusicFileDBHelper helper = new MusicFileDBHelper(this);
+		//helper.onUpgrade(MusicFileDBHelper.getDatabase(),1,1);
+				
 		Toast.makeText(getApplicationContext(), "Lade Musikstücke", Toast.LENGTH_SHORT).show();
 		
-		(new PrepareMusicRetrieverTask(pRetriever, this)).execute();
+		//(new IndexMusicFilesTask(pDatasource, this)).execute();
+		this.onMusicRetrieverPrepared();
 	}
 
 	@Override
 	public void onMusicRetrieverPrepared() {
-		List<Item> items = pRetriever.getItems();
-		String[] titles = new String[items.size()];
+		List<MusicFile> files = pDatasource.findAll(false);
+		String[] titles = new String[files.size()];
 		
-		if (items.size() > 0) {
-			for (int i = 0; i<items.size(); i++) {
-				titles[i] = items.get(i).getTitle();
+		if (files.size() > 0) {
+			for (int i = 0; i<files.size(); i++) {
+				titles[i] = files.get(i).getFilename();
 			}
 			
 			this.setListAdapter(new ArrayAdapter<String>(this, R.layout.simple_list_item_1, titles));

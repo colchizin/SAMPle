@@ -4,23 +4,34 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.sample.musicfiles.musicretriever.MusicRetriever.Item;
+
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Log;
 
 public class MusicFileDatasource extends Datasource {
 	private boolean default_depth = true;
+	private String TAG = "MusicFileDatasource";
+	
 	private SQLiteDatabase		database;
 	private String[]			fileColumns = {
 			MusicFileDBHelper.COLUMN_FILES_ID,
 			MusicFileDBHelper.COLUMN_FILES_FILENAME,
-			MusicFileDBHelper.COLUMN_FILES_FILETYPE
+			MusicFileDBHelper.COLUMN_FILES_FILETYPE,
+			MusicFileDBHelper.COLUMN_FILES_BPM
 	};
 	
 	
 	public MusicFileDatasource(Context context) {
 		super(context);
+		database = MusicFileDBHelper.getDatabase();
 	}
 	
 	/*
@@ -31,7 +42,15 @@ public class MusicFileDatasource extends Datasource {
 	 * @return MusicFile		Die gespeicherte Musikdatei inkl. ID
 	 */
 	public MusicFile createMusicFile(MusicFile file) {
-		// TODO
+		ContentValues values = new ContentValues();
+		
+		values.put(MusicFileDBHelper.COLUMN_FILES_FILENAME, file.getFilename());
+		values.put(MusicFileDBHelper.COLUMN_FILES_BPM, ((String)(file.getTag("bpm"))));
+		values.put(MusicFileDBHelper.COLUMN_FILES_FILETYPE, file.getFiletype());
+		
+		long insertId = database.insert(MusicFileDBHelper.TABLE_FILES, null, values);
+		file.setId(insertId);
+		
 		return file;
 	}
 	
@@ -92,7 +111,11 @@ public class MusicFileDatasource extends Datasource {
 				file.setTags(tagSource.findAllByFileId(file.getId()));
 			}
 			fileList.add(file);
+			Log.v(TAG, cursor.getString(MusicFileDBHelper.COLUMN_FILES_FILENAME_INDEX));
+			cursor.moveToNext();
 		}
+		
+		cursor.close();
 		
 		return fileList;
 	}
@@ -130,6 +153,7 @@ public class MusicFileDatasource extends Datasource {
 		}
 		
 		file.setId(filecursor.getInt(MusicFileDBHelper.COLUMN_FILES_ID_INDEX));
+		file.setFiletype(filecursor.getInt(MusicFileDBHelper.COLUMN_FILES_FILETYPE_INDEX));
 		
 		return file;
 	}
@@ -139,5 +163,65 @@ public class MusicFileDatasource extends Datasource {
 	}
 	
 	
+	
+	public void indexMediafiles() {
+		ContentResolver contentResolver = context.getContentResolver();
+		
+		Uri uri = android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+	    List<MusicFile> files = new ArrayList<MusicFile>(); 
+		
+        Log.i(TAG, "Querying media...");
+        Log.i(TAG, "URI: " + uri.toString());
+
+        // Perform a query on the content resolver. The URI we're passing specifies that we
+        // want to query for all audio media on external storage (e.g. SD card)
+        Cursor cur = contentResolver.query(uri, null,
+                MediaStore.Audio.Media.IS_MUSIC + " = 1", null, null);
+        Log.i(TAG, "Query finished. " + (cur == null ? "Returned NULL." : "Returned a cursor."));
+
+        if (cur == null) {
+            // Query failed...
+            Log.e(TAG, "Failed to retrieve music: cursor is null :-(");
+            return;
+        }
+        if (!cur.moveToFirst()) {
+            // Nothing to query. There is no music on the device. How boring.
+            Log.e(TAG, "Failed to move cursor to first row (no query results).");
+            return;
+        }
+
+        // retrieve the indices of the columns where the ID, title, etc. of the song are
+        int artistColumn = cur.getColumnIndex(MediaStore.Audio.Media.ARTIST);
+        int titleColumn = cur.getColumnIndex(MediaStore.Audio.Media.TITLE);
+        int albumColumn = cur.getColumnIndex(MediaStore.Audio.Media.ALBUM);
+        int durationColumn = cur.getColumnIndex(MediaStore.Audio.Media.DURATION);
+        int idColumn = cur.getColumnIndex(MediaStore.Audio.Media._ID);
+        int idFilename = cur.getColumnIndex(MediaStore.Audio.Media.DATA);
+
+        // add each song to mItems
+        do {
+        	MusicFile file;
+            String filename = cur.getString(idFilename);
+            String lastSegment = Uri.parse(filename).getLastPathSegment();
+            if (lastSegment.endsWith("mp3")) {
+            	file = new MP3File(filename);
+            } else {
+            	Log.w(TAG, "Invalid file type " + lastSegment + ". Skipping");
+            	continue;
+            }
+            files.add(file);
+            
+        } while (cur.moveToNext());
+        
+        cur.close();
+        
+        for(MusicFile file : files) {
+        	this.createMusicFile(file);
+        }
+        
+        System.gc();
+
+        Log.i(TAG, "Done indexing media. Library is ready.");
+	}
 }
  

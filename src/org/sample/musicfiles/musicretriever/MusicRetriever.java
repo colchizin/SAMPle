@@ -84,6 +84,7 @@ public class MusicRetriever {
         int albumColumn = cur.getColumnIndex(MediaStore.Audio.Media.ALBUM);
         int durationColumn = cur.getColumnIndex(MediaStore.Audio.Media.DURATION);
         int idColumn = cur.getColumnIndex(MediaStore.Audio.Media._ID);
+        int idFilename = cur.getColumnIndex(MediaStore.Audio.Media.DATA);
 
         Log.i(TAG, "Title column index: " + String.valueOf(titleColumn));
         Log.i(TAG, "ID column index: " + String.valueOf(titleColumn));
@@ -96,7 +97,8 @@ public class MusicRetriever {
                     cur.getString(artistColumn),
                     cur.getString(titleColumn),
                     cur.getString(albumColumn),
-                    cur.getLong(durationColumn)));
+                    cur.getLong(durationColumn),
+                    cur.getString(idFilename)));
         } while (cur.moveToNext());
 
         Log.i(TAG, "Done querying media. MusicRetriever is ready.");
@@ -122,14 +124,16 @@ public class MusicRetriever {
         String title;
         String album;
         String bpm;
+        String filename;
         long duration;
 
-        public Item(long id, String artist, String title, String album, long duration) {
+        public Item(long id, String artist, String title, String album, long duration, String filename) {
             this.id = id;
             this.artist = artist;
             this.title = title;
             this.album = album;
             this.duration = duration;
+            this.filename = filename;
         }
 
         public long getId() {

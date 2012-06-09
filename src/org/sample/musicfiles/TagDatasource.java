@@ -23,8 +23,8 @@ public class TagDatasource extends Datasource{
 		super(context);
 	}
 	
-	public HashMap<String,String> findAllByFileId(int fileid) {
-		String[] selectArgs = {Integer.toString(fileid)};
+	public HashMap<String,String> findAllByFileId(long fileid) {
+		String[] selectArgs = {Long.toString(fileid)};
 		
 		Cursor cursor = database.query(
 				MusicFileDBHelper.TABLE_TAGS,
