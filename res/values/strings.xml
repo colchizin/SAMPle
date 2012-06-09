@@ -3,5 +3,7 @@
 
     <string name="hello">Hello World, SAMPleActivity!</string>
     <string name="app_name">SAMPle</string>
-
+    <string name="start_name">SAMPle</string>
+    <string name="go">Go!</string>
+    <string name="start_instruction">music will be selected after 10s of stepping rhythm analysis</string>
 </resources>
