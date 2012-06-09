@@ -7,6 +7,7 @@ import java.util.List;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Environment;
 
 public class MusicFileDatasource extends Datasource {
 	private boolean default_depth = true;
@@ -136,5 +137,7 @@ public class MusicFileDatasource extends Datasource {
 	public void setDefaultDepth(boolean deep) {
 		default_depth = true;
 	}
+	
+	
 }
  
