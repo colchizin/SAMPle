@@ -45,8 +45,10 @@ public class MusicFileDatasource extends Datasource {
 		ContentValues values = new ContentValues();
 		
 		values.put(MusicFileDBHelper.COLUMN_FILES_FILENAME, file.getFilename());
-		values.put(MusicFileDBHelper.COLUMN_FILES_BPM, ((String)(file.getTag("bpm"))));
+		values.put(MusicFileDBHelper.COLUMN_FILES_BPM, file.getBPM());
 		values.put(MusicFileDBHelper.COLUMN_FILES_FILETYPE, file.getFiletype());
+		
+		Log.i(TAG, String.valueOf(file.getBPM()));
 		
 		long insertId = database.insert(MusicFileDBHelper.TABLE_FILES, null, values);
 		file.setId(insertId);
@@ -91,7 +93,17 @@ public class MusicFileDatasource extends Datasource {
 		return findById(id, default_depth);
 	}
 	
+	public List<MusicFile> findAllByBPM(int bpm, int tolerance) {
+		String condition = MusicFileDBHelper.COLUMN_FILES_BPM + ">" + (bpm-tolerance) + " AND " +
+				MusicFileDBHelper.COLUMN_FILES_BPM + "<" + (bpm+tolerance);
+		return findAll(false,condition);
+	}
+	
 	public List<MusicFile> findAll(boolean deep) {
+		return this.findAll(deep, "");
+	}
+	
+	public List<MusicFile> findAll(boolean deep, String condition) {
 		List<MusicFile> fileList = new ArrayList<MusicFile>();
 		TagDatasource tagSource = null;
 		
@@ -101,7 +113,7 @@ public class MusicFileDatasource extends Datasource {
 		Cursor cursor = database.query(
 			MusicFileDBHelper.TABLE_FILES,
 			fileColumns,
-			null,null,null,null,null
+			condition,null,null,null, MusicFileDBHelper.COLUMN_FILES_BPM + " DESC"
 		);
 		
 		cursor.moveToFirst();
@@ -111,7 +123,6 @@ public class MusicFileDatasource extends Datasource {
 				file.setTags(tagSource.findAllByFileId(file.getId()));
 			}
 			fileList.add(file);
-			Log.v(TAG, cursor.getString(MusicFileDBHelper.COLUMN_FILES_FILENAME_INDEX));
 			cursor.moveToNext();
 		}
 		
@@ -154,6 +165,7 @@ public class MusicFileDatasource extends Datasource {
 		
 		file.setId(filecursor.getInt(MusicFileDBHelper.COLUMN_FILES_ID_INDEX));
 		file.setFiletype(filecursor.getInt(MusicFileDBHelper.COLUMN_FILES_FILETYPE_INDEX));
+		file.setBPM(filecursor.getInt(MusicFileDBHelper.COLUMN_FILES_BPM_INDEX));
 		
 		return file;
 	}
@@ -216,6 +228,7 @@ public class MusicFileDatasource extends Datasource {
         cur.close();
         
         for(MusicFile file : files) {
+        	file = file.readFromFile();
         	this.createMusicFile(file);
         }
         

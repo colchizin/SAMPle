@@ -72,4 +72,12 @@ public abstract class MusicFile {
 	public void setTags(HashMap<String,String> tags) {
 		this.tags = tags;
 	}
+
+	public int getBPM() {
+		return this.bpm;
+	}
+
+	public void setBPM(int bpm) {
+		this.bpm = bpm;
+	}
 }
