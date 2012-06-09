@@ -6,63 +6,75 @@ import org.sample.musicfiles.MusicFile;
 
 import android.content.Context;
 import android.media.AudioManager;
-import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.util.Log;
 
 public class NativePlayer implements MusicPlayer {
+	
+	private MediaPlayer player;
+	private AudioManager audio;
 
-	private Context mContext;
-	private MediaPlayer mp;
-	private AudioManager am;
-	private AudioTrack at;
 
-	public NativePlayer(Context mContext) {
-		this.mContext = mContext;
-		mp = new MediaPlayer();
-		am = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+	public NativePlayer(Context mContext) {		
+		audio = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
 	}
 
 	public void play(MusicFile song) {
-		initPlayer(song.getFilename());			
-		mp.start();		
+		player = new MediaPlayer();
+		initPlayer(song.getFilename());
+		player.start();
 	}
-	
-	private void initPlayer(String filename){
+
+	private void initPlayer(String filename) {
 		try {
-			mp.setDataSource(filename);
-			mp.prepare();
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
+			player.setDataSource(filename);
+			player.prepare();
+		} catch (IllegalArgumentException e) {			
 			e.printStackTrace();
-		} catch (IllegalStateException e) {
-			// TODO Auto-generated catch block
+		} catch (IllegalStateException e) {			
 			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+		} catch (IOException e) {			
 			e.printStackTrace();
-		}		
+		}
 	}
 
 	public void fadeIn(long fadeTimeMs, MusicFile nextSong) {
 
-		int startVolume = am.getStreamVolume(AudioManager.STREAM_MUSIC);
+		int startVolume = audio.getStreamVolume(AudioManager.STREAM_MUSIC);
 
-		long fadeIntervall =(fadeTimeMs / startVolume);	
-		Log.d("SAMPleActivity", "fadeTimeMs: "+fadeTimeMs);
-		Log.d("SAMPleActivity", "startVolume: "+startVolume);
-		Log.d("SAMPleActivity", "fadeIntervall: "+fadeIntervall);
-		
-		MusicTimer fOut = new MusicTimer(fadeTimeMs, fadeIntervall, startVolume, am, mp, nextSong);
-		
+		long fadeIntervall = (fadeTimeMs / (startVolume*2));
+		Log.d("SAMPleActivity", "fadeTimeMs: " + fadeTimeMs);
+		Log.d("SAMPleActivity", "startVolume: " + startVolume);
+		Log.d("SAMPleActivity", "fadeIntervall: " + fadeIntervall);
+
+		MusicTimer fOut = new MusicTimer(fadeTimeMs, fadeIntervall,
+				startVolume, audio, player, nextSong);
+
 		fOut.start();
-		
+
 	}
 
-	
 	public void pause() {
-		mp.pause();
+		player.pause();
+	}
 
+	public void stop() {
+		player.stop();
+	}
+
+	public void increaseVolume() {
+		int curVolume = audio.getStreamVolume(AudioManager.STREAM_MUSIC);
+		int maxVolume = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+		if (curVolume < maxVolume) {
+			audio.setStreamVolume(AudioManager.STREAM_MUSIC, (curVolume+1), 0);
+		}
+	}
+	
+	public void decreaseVolume() {
+		int curVolume = audio.getStreamVolume(AudioManager.STREAM_MUSIC);		
+		if (curVolume > 0) {
+			audio.setStreamVolume(AudioManager.STREAM_MUSIC, (curVolume-1), 0);
+		}
 	}
 
 }

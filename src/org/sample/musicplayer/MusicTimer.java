@@ -8,17 +8,19 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.CountDownTimer;
 import android.util.Log;
-import android.widget.Toast;
 
 public class MusicTimer extends CountDownTimer {
-
-	private int curVolume;
+	
 	private AudioManager audio;
 	private MediaPlayer music;
+	
 	private MusicFile nextSong;
-	private boolean up;
+	
 	private long millisInFuture;
 	private int startVolume;
+	private int curVolume;
+	
+	private boolean increaseVol;
 
 	public MusicTimer(long millisInFuture, long countDownInterval,
 			int startVolume, AudioManager audio, MediaPlayer music,
@@ -28,29 +30,27 @@ public class MusicTimer extends CountDownTimer {
 		this.audio = audio;
 		this.music = music;
 		this.nextSong = nextSong;
-		up = false;
+		increaseVol = false;
 		this.millisInFuture=millisInFuture;
 		this.startVolume=startVolume;
-
 	}
 
 	@Override
 	public void onFinish() {
 		audio.setStreamVolume(AudioManager.STREAM_MUSIC, startVolume, 0);
-
 	}
 
 	@Override
 	public void onTick(long millisUntilFinished) {
 		Log.d("SAMPleActivity", "curVolume: "+curVolume);
 		Log.d("SAMPleActivity", "millisUntilFinished: "+millisUntilFinished);
-		if (up) {			
+		if (increaseVol) {			
 			curVolume++;
 			audio.setStreamVolume(AudioManager.STREAM_MUSIC, curVolume, 0);
 		} else {
 			if (curVolume <= 0 || (millisUntilFinished <= (millisInFuture/3*2))) {
 				Log.d("SAMPleActivity", "Change Song!");
-				up = true;
+				increaseVol = true;
 				changeSong();
 			} else {
 				curVolume--;
@@ -62,13 +62,12 @@ public class MusicTimer extends CountDownTimer {
 	}
 
 	private void changeSong() {		
-		try {
+		try {			
+			MediaPlayer nextPlayer = new MediaPlayer();
+			nextPlayer.setDataSource(nextSong.getFilename());
+			nextPlayer.prepare();
+			nextPlayer.start();	
 			music.stop();
-			MediaPlayer music2 = new MediaPlayer();
-			music2.setDataSource(nextSong.getFilename());
-			music2.prepare();
-			music2.start();
-			
 		} catch (IllegalStateException e) {			
 			e.printStackTrace();
 		} catch (IOException e) {		
