@@ -12,6 +12,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Environment;
 import android.util.Log;
 
 /**
@@ -37,7 +38,7 @@ public class SensorReader implements SensorEventListener {
     
     private float mExponentialMovingAverage;
     private final float mAlpha = (float) 0.2;
-    private final float mMaxlistSize = 100;
+    private final float mMaxListSize = 100;
     
     private LinkedList<Float> mDataList;
     
@@ -62,6 +63,10 @@ public class SensorReader implements SensorEventListener {
         mExponentialMovingAverage = 100; // g = 9.81 => g^2 ca. 100
         // data list
         mDataList = new LinkedList<Float>();
+        
+        // DEBUG
+        File root = Environment.getExternalStorageDirectory();
+        mLogFile = new File(root, "sensordata.csv");
     }
     
     /**
@@ -109,7 +114,7 @@ public class SensorReader implements SensorEventListener {
         Log.i("mean", String.valueOf(scalar));
         
         // const window size for moving average 
-        while (mDataList.size() > mMaxlistSize) {
+        while (mDataList.size() > mMaxListSize) {
         	mDataList.poll();
         }
         
@@ -163,7 +168,6 @@ public class SensorReader implements SensorEventListener {
 		while (i.hasNext()) {
 		   sum += i.next();
 		}
-		Log.i("mean", String.valueOf(sum) + ":" + String.valueOf(list.size()));
-		return ((float)(sum/(list.size()+1)));
+		return ((float)(sum/(list.size())));
 	}
 };
