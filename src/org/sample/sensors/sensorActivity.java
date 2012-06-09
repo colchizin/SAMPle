@@ -1,9 +1,7 @@
 package org.sample.sensors;
 
-import android.R;
 import android.app.Activity;
 import android.os.Bundle;
-import android.widget.TextView;
 
 public class sensorActivity extends Activity {
 	private SensorReader mSensorReader;
@@ -11,10 +9,7 @@ public class sensorActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        //setContentView(R.layout.main);
+        mSensorReader = new SensorReader(this);
         mSensorReader.start();
-        TextView textView = (TextView)findViewById(R.id.textView);
-        
-        
     }
 }
