@@ -16,6 +16,8 @@ package org.sample.musicfiles.musicretriever;
  * limitations under the License.
  */
 
+import org.sample.musicfiles.MusicFileDatasource;
+
 import android.os.AsyncTask;
 
 /**
@@ -23,19 +25,19 @@ import android.os.AsyncTask;
  * {@link MusicRetriever#prepare()} on a {@link MusicRetriever}, which may take some time to
  * run. Upon finishing, it notifies the indicated {@MusicRetrieverPreparedListener}.
  */
-public class PrepareMusicRetrieverTask extends AsyncTask<Void, Void, Void> {
-    MusicRetriever mRetriever;
-    MusicRetrieverPreparedListener mListener;
+public class IndexMusicFilesTask extends AsyncTask<Void, Void, Void> {
+    MusicFileDatasource mDatasource;
+    MusicFileDatasourceIndexedListener mListener;
 
-    public PrepareMusicRetrieverTask(MusicRetriever retriever,
-            MusicRetrieverPreparedListener listener) {
-        mRetriever = retriever;
+    public IndexMusicFilesTask(MusicFileDatasource datasource,
+            MusicFileDatasourceIndexedListener listener) {
+        mDatasource = datasource;
         mListener = listener;
     }
 
     @Override
     protected Void doInBackground(Void... arg0) {
-        mRetriever.prepare();
+        mDatasource.indexMediafiles();
         return null;
     }
 
@@ -44,7 +46,7 @@ public class PrepareMusicRetrieverTask extends AsyncTask<Void, Void, Void> {
         mListener.onMusicRetrieverPrepared();
     }
 
-    public interface MusicRetrieverPreparedListener {
+    public interface MusicFileDatasourceIndexedListener {
         public void onMusicRetrieverPrepared();
     }
 }

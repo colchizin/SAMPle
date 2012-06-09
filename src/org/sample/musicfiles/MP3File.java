@@ -10,7 +10,7 @@ public class MP3File extends MusicFile {
 
 	@Override
 	public MusicFile readFromFile() {
-		// TODO Auto-generated method stub
-		return null;
+		this.bpm = ID3Parser.parseBPM(filename);
+		return this;
 	}
 }
