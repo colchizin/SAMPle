@@ -2,37 +2,47 @@ package org.sample.sensors;
 
 import java.util.ArrayList;
 
-import android.app.Activity;
+import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 
-public class SensorReader extends Activity implements SensorEventListener {
+/**
+ * Klasse zum Auslesen des Beschleunigungssensors
+ * @author sgibb 
+ *
+ */
+public class SensorReader implements SensorEventListener {
     private final SensorManager mSensorManager;
     private final Sensor mAccelerometer;
     private ArrayList<Float> mSensorValues;
+    private Context mContext;
 
-    public SensorReader() {
-        mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+    /**
+     * Ctor
+     */
+    public SensorReader(Context context) {
+    	mContext = context; 
+        mSensorManager = (SensorManager)mContext.getSystemService(Context.SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
     }
-
-    protected void onResume() {
-        super.onResume();
-        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+    
+    /**
+     * Dtor
+     */
+    protected void finalize() {	
+    	stop();
     }
 
-    protected void onPause() {
-        super.onPause();
-        mSensorManager.unregisterListener(this);
-    }
-
-	public void startSimulation() {
+    /**
+     * start event listener for for acceleration sensor
+     */
+	public void start() {
         mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_UI);
     }
 
-    public void stopSimulation() {
+    public void stop() {
         mSensorManager.unregisterListener(this);
     }
     
@@ -56,6 +66,7 @@ public class SensorReader extends Activity implements SensorEventListener {
 		return mSensorValues;
 	}
 	
+
 	public void clear() {
 		mSensorValues.clear();
 	}
