@@ -14,6 +14,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.provider.MediaStore.Audio;
 import android.util.Log;
 
 public class MusicFileDatasource extends Datasource {
@@ -25,7 +26,8 @@ public class MusicFileDatasource extends Datasource {
 			MusicFileDBHelper.COLUMN_FILES_ID,
 			MusicFileDBHelper.COLUMN_FILES_FILENAME,
 			MusicFileDBHelper.COLUMN_FILES_FILETYPE,
-			MusicFileDBHelper.COLUMN_FILES_BPM
+			MusicFileDBHelper.COLUMN_FILES_BPM,
+			MusicFileDBHelper.COLUMN_FILES_AID
 	};
 	
 	
@@ -47,6 +49,7 @@ public class MusicFileDatasource extends Datasource {
 		values.put(MusicFileDBHelper.COLUMN_FILES_FILENAME, file.getFilename());
 		values.put(MusicFileDBHelper.COLUMN_FILES_BPM, file.getBPM());
 		values.put(MusicFileDBHelper.COLUMN_FILES_FILETYPE, file.getFiletype());
+		values.put(MusicFileDBHelper.COLUMN_FILES_AID, file.getAID());
 		
 		Log.i(TAG, String.valueOf(file.getBPM()));
 		
@@ -93,9 +96,14 @@ public class MusicFileDatasource extends Datasource {
 		return findById(id, default_depth);
 	}
 	
+	/*
+	 * Findet alle Musikstücke, deren BPM sich im übergebenen Bereich bewegen
+	 * @param bpm
+	 * @param tolerance
+	 * @return List<MusicFile>
+	 */
 	public List<MusicFile> findAllByBPM(int bpm, int tolerance) {
-		String condition = MusicFileDBHelper.COLUMN_FILES_BPM + ">" + (bpm-tolerance) + " AND " +
-				MusicFileDBHelper.COLUMN_FILES_BPM + "<" + (bpm+tolerance);
+		String condition = MusicFileDBHelper.getBPMCondition(bpm, tolerance);
 		return findAll(false,condition);
 	}
 	
@@ -119,9 +127,8 @@ public class MusicFileDatasource extends Datasource {
 		cursor.moveToFirst();
 		while(!cursor.isAfterLast()) {
 			MusicFile file = cursorToMusicFile(cursor);
-			if (deep) {
-				file.setTags(tagSource.findAllByFileId(file.getId()));
-			}
+			
+			file = this.fetchMetadata(file);
 			fileList.add(file);
 			cursor.moveToNext();
 		}
@@ -166,6 +173,7 @@ public class MusicFileDatasource extends Datasource {
 		file.setId(filecursor.getInt(MusicFileDBHelper.COLUMN_FILES_ID_INDEX));
 		file.setFiletype(filecursor.getInt(MusicFileDBHelper.COLUMN_FILES_FILETYPE_INDEX));
 		file.setBPM(filecursor.getInt(MusicFileDBHelper.COLUMN_FILES_BPM_INDEX));
+		file.setAID(filecursor.getLong(MusicFileDBHelper.COLUMN_FILES_AID_INDEX));
 		
 		return file;
 	}
@@ -174,7 +182,46 @@ public class MusicFileDatasource extends Datasource {
 		default_depth = true;
 	}
 	
-	
+	public MusicFile fetchMetadata(MusicFile file) {
+		ContentResolver contentResolver = context.getContentResolver();
+
+		String[] args = {file.getFilename()};
+		String[] cols = {
+				MediaStore.Audio.Media._ID,
+				MediaStore.Audio.Media.ALBUM,
+				MediaStore.Audio.Media.ARTIST,
+				MediaStore.Audio.Media.DURATION,
+				MediaStore.Audio.Media.TITLE
+		};
+		
+		Log.v(TAG, "Fetching Metadata for" + file.getFilename());
+		
+		Cursor cursor = contentResolver.query(
+				android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+				cols,
+				MediaStore.Audio.Media._ID + "=" + file.getAID() + "",
+				null,
+				null
+		);
+		
+		if (cursor == null || cursor.getCount() < 1) {
+			Log.w(TAG, "No Metadata found: " + file.getFilename());
+		} else {
+			int artistColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
+	        int titleColumn = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
+	        int albumColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM);
+	        int durationColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DURATION);
+			cursor.moveToFirst();
+			file.setMetadata(
+					cursor.getString(titleColumn),
+					cursor.getString(artistColumn),
+					cursor.getString(albumColumn),
+					cursor.getLong(durationColumn)
+				);
+		}
+		
+		return file;
+	}
 	
 	public void indexMediafiles() {
 		ContentResolver contentResolver = context.getContentResolver();
@@ -221,6 +268,7 @@ public class MusicFileDatasource extends Datasource {
             	Log.w(TAG, "Invalid file type " + lastSegment + ". Skipping");
             	continue;
             }
+            file.setAID(cur.getLong(idColumn));
             files.add(file);
             
         } while (cur.moveToNext());

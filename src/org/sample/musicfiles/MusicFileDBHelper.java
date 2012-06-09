@@ -14,11 +14,13 @@ public class MusicFileDBHelper extends SQLiteOpenHelper {
 	public static final String COLUMN_FILES_FILENAME = "filename";
 	public static final String COLUMN_FILES_FILETYPE = "filetype";
 	public static final String COLUMN_FILES_BPM = "bpm";
+	public static final String COLUMN_FILES_AID = "aid";
 	
 	public static final int COLUMN_FILES_ID_INDEX = 0;
 	public static final int COLUMN_FILES_FILENAME_INDEX = 1;
 	public static final int COLUMN_FILES_FILETYPE_INDEX = 2;
 	public static final int COLUMN_FILES_BPM_INDEX = 3;
+	public static final int	COLUMN_FILES_AID_INDEX = 4;
 	
 	public static final String COLUMN_TAGS_ID = "id";
 	public static final String COLUMN_TAGS_FILE_ID = "file_id";
@@ -41,9 +43,11 @@ public class MusicFileDBHelper extends SQLiteOpenHelper {
 			COLUMN_FILES_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
 			COLUMN_FILES_FILENAME + " TEXT NOT NULL, " +
 			COLUMN_FILES_FILETYPE + " UNSIGNED SMALLINT NOT NULL, " +
-			COLUMN_FILES_BPM + " UNSIGNED SMALLINT NULL" + 
+			COLUMN_FILES_BPM + " UNSIGNED SMALLINT NULL, " + 
+			COLUMN_FILES_AID + " UNSIGNED BIGINT NOT NULL" +
 			");";
 	
+	// obsolete
 	private static final String TABLE_TAGS_CREATE =
 			"CREATE TABLE " + TABLE_TAGS + " (" +
 			COLUMN_TAGS_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -82,6 +86,12 @@ public class MusicFileDBHelper extends SQLiteOpenHelper {
 		if (MusicFileDBHelper.helper != null)
 			return MusicFileDBHelper.helper.getWritableDatabase();
 		return null;
+	}
+	
+	public static String getBPMCondition(int bpm, int tolerance) {
+		String condition = MusicFileDBHelper.COLUMN_FILES_BPM + ">" + (bpm-tolerance) + " AND " +
+				MusicFileDBHelper.COLUMN_FILES_BPM + "<" + (bpm+tolerance);
+		return condition;
 	}
 
 }

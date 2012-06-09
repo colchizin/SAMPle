@@ -46,8 +46,9 @@ public class MusicFileAdapter extends BaseAdapter {
 		TextView tv1 = ((TextView)(convertView.findViewById(R.id.text1)));
 		TextView tv2 = ((TextView)(convertView.findViewById(R.id.text2)));
 
-		tv1.setText(((MusicFile)getItem(position)).getFilename());
-		tv2.setText("BPM: " + ((MusicFile)getItem(position)).getBPM());
+		MusicFile file = (MusicFile) getItem(position);
+		tv1.setText(file.getTitle() + " (" + file.album + ")");
+		tv2.setText("BPM: " + file.getBPM() + ", AID: " + file.getAID());
 		
 		return convertView;
 	}

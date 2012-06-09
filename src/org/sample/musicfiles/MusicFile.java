@@ -8,10 +8,17 @@ public abstract class MusicFile {
 	
 	public HashMap<String,String>	tags;	// Assoziative Liste zum Speichern der ID3-Tags
 	
-	protected String	filename;
-	protected long		id;
+	protected String	filename;	// Dateiname im Dateisystem
+	protected String	uri;		// Content-Uri
+	protected long		id;			// ID in der BPM-Tabelle
+	protected long		aid;		// ID in der Android-Tabelle
 	protected int		filetype;
+	
 	protected int		bpm;
+	public String		artist;
+	public String		title;
+	public String		album;
+	public long			duration;
 	
 	/*
 	 * Der Konstruktor setzt den Dateinamen fest.
@@ -79,5 +86,33 @@ public abstract class MusicFile {
 
 	public void setBPM(int bpm) {
 		this.bpm = bpm;
+	}
+	
+	public String getUri() {
+		return uri;
+	}
+
+	public void setUri(String uri) {
+		this.uri = uri;
+	}
+	
+	public void setMetadata(String title, String artist, String album, long duration) {
+		this.title = title;
+		this.artist = artist;
+		this.album = album;
+		this.duration = duration;
+	}
+
+	public CharSequence getTitle() {
+		// TODO Auto-generated method stub
+		return this.title;
+	}
+	
+	public long getAID() {
+		return this.aid;
+	}
+	
+	public void setAID(long aid) {
+		this.aid = aid;
 	}
 }
