@@ -10,6 +10,7 @@ public interface MusicPlayer {
 	public void stop();
 	public void increaseVolume();
 	public void decreaseVolume();
+	public void resume();
 	
 
 }
