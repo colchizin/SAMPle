@@ -43,14 +43,15 @@ public class SensorReader implements SensorEventListener {
     private final float mAlpha = (float) 0.2;
     private final int mWindowSizeMovingAverage = 100;
     private final double mTimeInterval = 10; // in seconds
-    private final float mGravityThreshold = 120; // g = 9.8 ; g^2 ca. 100 
+    private final float mGravityThreshold = 110; // g = 9.8 ; g^2 ca. 100 
     private final double mStepSendInterval = 2; // in seconds
     
     private long mLastChangedSend;
+    private int mNumberOfChangedSigns;
     
     // TO DEBUG
-    private File mLogFile;
-    private FileWriter mLogStream; 
+    //private File mLogFile;
+    //private FileWriter mLogStream; 
 
     /**
      * Ctor
@@ -74,6 +75,9 @@ public class SensorReader implements SensorEventListener {
         
         // timestamp for last StepChanged::onStepChanged
         mLastChangedSend = 0;
+        
+        // store number of sign changes
+        mNumberOfChangedSigns = 0;
         
         // DEBUG
         //File root = Environment.getExternalStorageDirectory();
@@ -130,11 +134,11 @@ public class SensorReader implements SensorEventListener {
         
         checkSignChange(movingAverage);
         
-        int steps=countSteps();
-        
+        int steps = countSteps();
         // DEBUG ONLY
         Log.i("SensorReader", entry.timestamp + ":" + String.valueOf(entry.value) + ", steps: "
         	+ String.valueOf(steps) +":" + String.valueOf(movingAverageOpt) + ":" + String.valueOf(movingAverage));
+        
         /*
         try {
         	mLogStream = new FileWriter(mLogFile, true);
@@ -148,8 +152,11 @@ public class SensorReader implements SensorEventListener {
         }*/
 	}
 	
+    /**
+     * only needed to fit interface implementation needs
+     */
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
-		// TODO
+		// not needed
 	}
 	
 	/**
@@ -203,9 +210,15 @@ public class SensorReader implements SensorEventListener {
 		float pre = mExponentialMovingAverage - movingAverage;
 		float post = ewma(mSensorValues.get(n-1).value) - movingAverage;
 		
-		mSensorValues.get(n-1).sign = Math.abs(( Math.abs(pre+post) - Math.abs(pre) - Math.abs(post) )) > 0.001 &&
-				// zero iff pre and post have the same sign
+		boolean isSignChanged = Math.abs(( Math.abs(pre+post) - Math.abs(pre) - Math.abs(post) )) > 0.001 &&
+				// zero if pre and post have the same sign
 				movingAverage > mGravityThreshold;
+				
+		mSensorValues.get(n-1).sign = isSignChanged;
+		
+		if (isSignChanged) {
+			mNumberOfChangedSigns+=1;
+		}
 	}
 	
 	/**
@@ -222,19 +235,24 @@ public class SensorReader implements SensorEventListener {
 		
 		if (deltaTime > mTimeInterval) {
 			//Log.i("> mTimeInterval", String.valueOf(deltaTime));
-			for (int i=0; i<n; ++i) {
+			/*for (int i=0; i<n; ++i) {
 				if (mSensorValues.get(i).sign) {
 					steps+=1;
 				}
-			}
-			steps /= 2; // 2 Null-Durchgänge je Schritt
+			}*/
+			steps = mNumberOfChangedSigns/2; // 2 Null-Durchgänge je Schritt
 			steps *= (int)Math.ceil(60/mTimeInterval);
 			
+			// don't send every change
 			long currentTimeStamp = System.currentTimeMillis();
 			if ( ((currentTimeStamp - mLastChangedSend) / 1000 ) > mStepSendInterval) {
 				mLastChangedSend = currentTimeStamp;
 				mStepChangeListener.onStepChanged(steps);
 				//Log.i("StepChangeListener", "onChanged");
+			}
+			
+			if (mSensorValues.get(0).sign) {
+				mNumberOfChangedSigns-=1;
 			}
 			
 			mSensorValues.poll();

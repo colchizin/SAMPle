@@ -61,6 +61,10 @@ public class NativePlayer implements MusicPlayer {
 	public void stop() {
 		player.stop();
 	}
+	
+	public void resume(){
+		player.start();
+	}
 
 	public void increaseVolume() {
 		int curVolume = audio.getStreamVolume(AudioManager.STREAM_MUSIC);
