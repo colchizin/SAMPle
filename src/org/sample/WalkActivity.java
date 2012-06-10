@@ -10,14 +10,19 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class WalkActivity extends Activity implements OnClickListener {
 
 	private MusicPlayer music;
 	private ImageButton skipButton;
-
 	private ImageButton pauseButton;
+	
+	private TextView artist_text;
+	private TextView title_text;
+	private TextView bpm_text;
+	private TextView spm_text;
 
 	private boolean isPlaying;
 
@@ -30,12 +35,26 @@ public class WalkActivity extends Activity implements OnClickListener {
 		skipButton.setOnClickListener(this);
 		pauseButton = (ImageButton) findViewById(R.id.button_pause);
 		pauseButton.setOnClickListener(this);
+		
+		artist_text = (TextView) findViewById(R.id.text_artist);
+		title_text = (TextView) findViewById(R.id.text_title);
+		bpm_text = (TextView) findViewById(R.id.text_bpm);
+		spm_text = (TextView) findViewById(R.id.text_spm);
+		
 		music = new NativePlayer(this);
 
 		MP3File song = new MP3File("/sdcard/Kalimba.mp3");
+		setInfo(song);
 		music.play(song);
 		isPlaying = true;
 
+	}
+
+	private void setInfo(MP3File song) {
+		artist_text.setText(song.title);
+		title_text.setText(song.title);
+		bpm_text.setText(String.valueOf(song.getBPM()));
+		spm_text.setText("");		
 	}
 
 	public void onClick(View v) {
