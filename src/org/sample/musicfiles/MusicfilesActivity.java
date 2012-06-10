@@ -45,7 +45,6 @@ public class MusicfilesActivity extends Activity implements
 		
 		Button play = (Button)(this.findViewById(R.id.button_play));
 		play.setOnClickListener(new OnClickListener() {
-			@Override
 			public void onClick(View arg0) {
 				Intent intent = new Intent(MusicService.ACTION_PLAY);
 				startService(intent);
@@ -55,7 +54,6 @@ public class MusicfilesActivity extends Activity implements
 		
 		Button pause = (Button)(this.findViewById(R.id.button_pause));
 		pause.setOnClickListener(new OnClickListener() {
-			@Override
 			public void onClick(View arg0) {
 				Intent intent = new Intent(MusicService.ACTION_PAUSE);
 				startService(intent);
@@ -64,7 +62,6 @@ public class MusicfilesActivity extends Activity implements
 		
 		Button stop = (Button)(this.findViewById(R.id.button_stop));
 		stop.setOnClickListener(new OnClickListener() {
-			@Override
 			public void onClick(View arg0) {
 				Intent intent = new Intent(MusicService.ACTION_STOP);
 				startService(intent);
@@ -73,7 +70,6 @@ public class MusicfilesActivity extends Activity implements
 		
 		Button next = (Button)(this.findViewById(R.id.button_next));
 		next.setOnClickListener(new OnClickListener() {
-			@Override
 			public void onClick(View arg0) {
 				Intent intent = new Intent(MusicService.ACTION_SKIP);
 				startService(intent);
