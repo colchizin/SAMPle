@@ -8,20 +8,25 @@ import org.sample.musicfiles.musicretriever.MusicRetriever;
 import org.sample.musicfiles.musicretriever.MusicRetriever.Item;
 import org.sample.musicfiles.musicretriever.IndexMusicFilesTask;
 import org.sample.musicplayer.MusicService;
+import org.sample.R;
 
+import android.app.Activity;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnPreparedListener;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
-import android.R;
 
-public class MusicfilesActivity extends ListActivity implements
+public class MusicfilesActivity extends Activity implements
 	IndexMusicFilesTask.MusicFileDatasourceIndexedListener,
 	FindMusicFilesTask.MusicFilesFoundListener
 {
@@ -36,8 +41,46 @@ public class MusicfilesActivity extends ListActivity implements
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
-		Intent intent = new Intent();
-		intent.setAction("org.sample.musicplayer.MusicService");
+		this.setContentView(R.layout.musicfiles_activity_layout);
+		
+		Button play = (Button)(this.findViewById(R.id.button_play));
+		play.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				Intent intent = new Intent(MusicService.ACTION_PLAY);
+				startService(intent);
+				Log.d(TAG, "Button Play clicked");
+			}
+		});
+		
+		Button pause = (Button)(this.findViewById(R.id.button_pause));
+		pause.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				Intent intent = new Intent(MusicService.ACTION_PAUSE);
+				startService(intent);
+			}
+		});
+		
+		Button stop = (Button)(this.findViewById(R.id.button_stop));
+		stop.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				Intent intent = new Intent(MusicService.ACTION_STOP);
+				startService(intent);
+			}
+		});
+		
+		Button next = (Button)(this.findViewById(R.id.button_next));
+		next.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				Intent intent = new Intent(MusicService.ACTION_SKIP);
+				startService(intent);
+			}
+		});
+		
+		Intent intent = new Intent(MusicService.ACTION_PREPARE);
 		startService(intent);
 		
 		/*pDatasource = new MusicFileDatasource(this);
@@ -66,7 +109,7 @@ public class MusicfilesActivity extends ListActivity implements
 		pProgressDialog.dismiss();
 		if (files.size() > 0) {
 			//this.setListAdapter(new ArrayAdapter<String>(this, R.layout.simple_list_item_1, titles));
-			this.setListAdapter(new MusicFileAdapter(files, this));
+			//this.setListAdapter(new MusicFileAdapter(files, this));
 			
 			Toast.makeText(getApplicationContext(), "Musikstücke geladen", Toast.LENGTH_SHORT).show();
 		} else {

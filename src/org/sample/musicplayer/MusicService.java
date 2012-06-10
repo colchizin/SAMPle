@@ -7,6 +7,7 @@ import java.util.Random;
 import org.sample.musicfiles.FindMusicFilesTask;
 import org.sample.musicfiles.FindMusicFilesTask.MusicFilesFoundListener;
 import org.sample.musicfiles.MusicFile;
+import org.sample.musicfiles.MusicFileDBHelper;
 import org.sample.musicfiles.MusicFileDatasource;
 import org.sample.sensors.SensorReader;
 import org.sample.sensors.StepChangeListener;
@@ -30,18 +31,20 @@ public class MusicService extends Service implements
 		StepChangeListener {
 	final static String TAG = "SAMPleMusicService";
 	
-	public static final String ACTION_PLAY = "com.sample.musicplayer.action.PLAY";
-	public static final String ACTION_TOGGLE_PLAYBACK = "com.sample.musicplayer.action.TOGGLE_PLAYBACK";
-    public static final String ACTION_PAUSE = "com.sample.musicplayer.action.PAUSE";
-    public static final String ACTION_STOP = "com.sample.musicplayer.action.STOP";
-    public static final String ACTION_SKIP = "com.sample.musicplayer.action.SKIP";
-    public static final String ACTION_REWIND = "com.sample.musicplayer.action.REWIND";
-    public static final String ACTION_URL = "com.sample.musicplayer.action.URL";
+	public static final String ACTION_PLAY = "com.sample.musicservice.action.PLAY";
+	public static final String ACTION_TOGGLE_PLAYBACK = "com.sample.musicservice.action.TOGGLE_PLAYBACK";
+    public static final String ACTION_PAUSE = "com.sample.musicservice.action.PAUSE";
+    public static final String ACTION_STOP = "com.sample.musicservice.action.STOP";
+    public static final String ACTION_SKIP = "com.sample.musicservice.action.SKIP";
+    public static final String ACTION_REWIND = "com.sample.musicservice.action.REWIND";
+    public static final String ACTION_URL = "com.sample.musicservice.action.URL";
+    public static final String ACTION_PREPARE = "com.sample.musicservice.action.PREPARE";
     
     MediaPlayer mMediaPlayer = null;
     NotificationManager mNotificationManager = null;
     AudioManager mAudioManager = null;
     
+    List<MusicFile> mCurrentFiles = null;
     MusicFile mNextFile = null;
     SensorReader mSensorReader;
     
@@ -106,6 +109,7 @@ public class MusicService extends Service implements
         else if (action.equals(ACTION_SKIP)) processSkipRequest();
         else if (action.equals(ACTION_STOP)) processStopRequest();
         else if (action.equals(ACTION_REWIND)) processRewindRequest();
+        else if (action.equals(ACTION_PREPARE)) processPrepareRequest();
 
         return START_NOT_STICKY; // Means we started the service, but don't want it to
                                  // restart in case it's killed.
@@ -118,6 +122,7 @@ public class MusicService extends Service implements
         mAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         mSensorReader = new SensorReader(this,this);
         datasource = new MusicFileDatasource(this);
+        this.lastChangeTimestamp = System.currentTimeMillis();
         mSensorReader.start();
         //mMediaButtonReceiverComponent = new ComponentName(this, MusicIntentReceiver.class);
     }
@@ -127,24 +132,28 @@ public class MusicService extends Service implements
         Log.d(TAG, "debug: service destroyed");
     }
     
-	
 	public IBinder onBind(Intent arg0) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 	
-	
+	/*
+	 * Wird aufgerufen, wenn der MediaPlayer bereit zum starten ist
+	 * (non-Javadoc)
+	 * @see android.media.MediaPlayer.OnPreparedListener#onPrepared(android.media.MediaPlayer)
+	 */
 	public void onPrepared(MediaPlayer mp) {
 		mp.start();
+		setState(State.Playing);
 	}
 
-	
 	public boolean onError(MediaPlayer mp, int what, int extra) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 	
 	void processTogglePlaybackRequest() {
+		Log.d(TAG,"Processing toggleplayback request. Current State: " + this.mState);
         if (mState == State.Paused || mState == State.Stopped) {
             processPlayRequest();
         } else {
@@ -153,31 +162,35 @@ public class MusicService extends Service implements
     }
 	
 	void processPlayRequest() {
+		mStartPlayingAfterRetrieve = true;
+		
+		Log.d(TAG,"Processing play request. Current State: " + this.mState);
         if (mState == State.Retrieving) {
             // If we are still retrieving media, just set the flag to start playing when we're
             // ready
-            mWhatToPlayAfterRetrieve = null; // play a random song
-            mStartPlayingAfterRetrieve = true;
+            
             return;
         }
-
-
         // actually play the song
 
         if (mState == State.Stopped) {
             // If we're stopped, just go ahead to the next song and start playing
-            playNextSong(null);
+        	
+        	playNextSong(null);
         }
         else if (mState == State.Paused) {
             // If we're paused, just continue playback and restore the 'foreground service' state.
-            mState = State.Playing;
+        	
+            setState(State.Playing);
+            mMediaPlayer.start();
             //setUpAsForeground(mSongTitle + " (playing)");
             //configAndStartMediaPlayer(); // TODO
         }
     }
 	
 	void processPauseRequest() {
-        if (mState == State.Retrieving) {
+		Log.d(TAG,"Processing pause request. Current State: " + this.mState);
+		if (mState == State.Retrieving) {
             // If we are still retrieving media, clear the flag that indicates we should start
             // playing when we're ready
             mStartPlayingAfterRetrieve = false;
@@ -186,7 +199,7 @@ public class MusicService extends Service implements
 
         if (mState == State.Playing) {
             // Pause media player and cancel the 'foreground service' state.
-            mState = State.Paused;
+            setState(State.Paused);
             mMediaPlayer.pause();
             //relaxResources(false); // while paused, we always retain the MediaPlayer
             // do not give up audio focus
@@ -200,11 +213,15 @@ public class MusicService extends Service implements
     }
 	
 	void processRewindRequest() {
+		Log.d(TAG,"Processing rewind request. Current State: " + this.mState);
+
         if (mState == State.Playing || mState == State.Paused)
             mMediaPlayer.seekTo(0);
     }
 
     void processSkipRequest() {
+		Log.d(TAG,"Processing skip request");
+
         if (mState == State.Playing || mState == State.Paused) {
             // tryToGetAudioFocus();
             playNextSong(null);
@@ -216,9 +233,13 @@ public class MusicService extends Service implements
     }
 	
 	void processStopRequest(boolean force) {
-        if (mState == State.Playing || mState == State.Paused || force) {
-            mState = State.Stopped;
+		Log.d(TAG,"Processing stop request. Current State: " + this.mState);
 
+        if (mState == State.Playing || mState == State.Paused || force) {
+            setState(State.Stopped);
+
+            mMediaPlayer.stop();
+            
             // let go of all resources...
             //relaxResources(true);
             //giveUpAudioFocus();
@@ -234,22 +255,61 @@ public class MusicService extends Service implements
         }
     }
 	
+	public void processPrepareRequest() {
+		Log.d(TAG,"Processing prepare request. Current State: " + this.mState);
+		setState(State.Retrieving);
+		this.mStartPlayingAfterRetrieve = false;
+		(new FindMusicFilesTask(
+				this.datasource,
+				null, //MusicFileDBHelper.getBPMCondition(bpm, 10),
+				this
+		)).execute();
+	}
+	
 	public void playNextSong(String filename) {
-		
+		if (filename == null) {
+			if (this.mCurrentFiles != null)
+				playRandomSong();
+			else {
+				setState(State.Retrieving);
+				(new FindMusicFilesTask(
+						this.datasource,
+						null, //MusicFileDBHelper.getBPMCondition(bpm, 10),
+						this
+				)).execute();
+			}
+		}
+	}
+	
+	public void play() {
+		try {
+			mMediaPlayer.setDataSource(mNextFile.getFilename());
+			mMediaPlayer.prepareAsync();
+			mLocked = false;
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalStateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
-	
 	public void onCompletion(MediaPlayer mp) {
 		playNextSong(null);	
 	}
 
-	
-	public void onMusicFilesFound(List<MusicFile> files) {
+	public void playRandomSong() {
 		Random random = new Random();
-		int size = files.size();
+		int size = mCurrentFiles.size();
+		
 		if (size > 0) {
-			int rand = random.nextInt(files.size());
-			mNextFile = files.get(rand);
+			int rand = random.nextInt(size);
+			mNextFile = mCurrentFiles.get(rand);
+			Log.d(TAG, "Next file is " + mNextFile.getFilename());
 			
 			createMediaPlayerIfNeeded();
 			
@@ -257,24 +317,19 @@ public class MusicService extends Service implements
 				mMediaPlayer.stop();
 			}
 			
-			try {
-				mMediaPlayer.setDataSource(mNextFile.getFilename());
-				mMediaPlayer.prepareAsync();
-				mLocked = false;
-			} catch (IllegalArgumentException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IllegalStateException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			if (this.mStartPlayingAfterRetrieve) {
+				play();
 			}
 		}
 	}
-
 	
+	public void onMusicFilesFound(List<MusicFile> files) {
+		mLocked = false;
+		this.mCurrentFiles = files;
+		setState(State.Stopped);
+		playRandomSong();
+	}
+
 	public void onStepChanged(int bpm) {
 		if (mLocked)
 			return;
@@ -285,13 +340,13 @@ public class MusicService extends Service implements
 		long now = System.currentTimeMillis();
 		
 		if ((now-this.lastChangeTimestamp) < this.songSwitchThreshold) {
-			Log.d(TAG, "Too little Time has passed. " + Math.round((now-this.lastChangeTimestamp)/1000) + "s");
+			//Log.d(TAG, "Too little Time has passed. " + Math.round((now-this.lastChangeTimestamp)/1000) + "s");
 			mLocked = false;
 			return;
 		}
 			
 		if (bpm <= upperThreshold && bpm >= lowerThreshold) {
-			Log.d(TAG, "Step not sufficiently changed. " + bpm + " " + upperThreshold + " " + lowerThreshold);
+			//Log.d(TAG, "Step not sufficiently changed. " + bpm + " " + upperThreshold + " " + lowerThreshold);
 			mLocked = false;
 			return;
 		}
@@ -302,8 +357,13 @@ public class MusicService extends Service implements
 		
 		(new FindMusicFilesTask(
 				this.datasource,
-				null, //MusicFileDBHelper.getBPMCondition(bpm, 10),
+				MusicFileDBHelper.getBPMCondition(bpm, 10),
 				this
 		)).execute();
+	}
+	
+	protected void setState(State s) {
+		Log.d(TAG, "[State Changed] Old State :" + mState + ", New State: " + s);
+		this.mState = s;
 	}
 }

@@ -194,7 +194,7 @@ public class MusicFileDatasource extends Datasource {
 				MediaStore.Audio.Media.TITLE
 		};
 		
-		Log.v(TAG, "Fetching Metadata for" + file.getFilename());
+		// Log.v(TAG, "Fetching Metadata for" + file.getFilename());
 		
 		Cursor cursor = contentResolver.query(
 				android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
@@ -204,9 +204,7 @@ public class MusicFileDatasource extends Datasource {
 				null
 		);
 		
-		if (cursor == null || cursor.getCount() < 1) {
-			Log.w(TAG, "No Metadata found: " + file.getFilename());
-		} else {
+		if (cursor != null && cursor.getCount() > 0) {
 			int artistColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
 	        int titleColumn = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
 	        int albumColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM);
@@ -218,7 +216,11 @@ public class MusicFileDatasource extends Datasource {
 					cursor.getString(albumColumn),
 					cursor.getLong(durationColumn)
 				);
+		} else {
+			Log.w(TAG, "No Metadata found: " + file.getFilename());
 		}
+		
+		cursor.close();
 		
 		return file;
 	}

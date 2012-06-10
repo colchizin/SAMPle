@@ -13,7 +13,7 @@
         android:icon="@drawable/sample_logo"
         android:label="@string/app_name" android:persistent="false" android:restoreAnyVersion="false">
         <activity
-            android:name=".SAMPleActivity"
+            android:name=".musicfiles.MusicfilesActivity"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -39,7 +39,13 @@
         </activity>
         <service android:name=".musicplayer.MusicService">
             <intent-filter android:label="SAMPle Music Filter">
-                <action android:name="org.sample.musicplayer.MusicService"/>
+                <action android:name="com.sample.musicservice.action.PLAY"/>
+                <action android:name="com.sample.musicservice.action.PAUSE"/>
+                <action android:name="com.sample.musicservice.action.TOGGLE_PLAYBACK"/>
+                <action android:name="com.sample.musicservice.action.STOP"/>
+                <action android:name="com.sample.musicservice.action.SKIP"/>
+                <action android:name="com.sample.musicservice.action.REWIND"/>
+                <action android:name="com.sample.musicservice.action.PREPARE"/>
             </intent-filter>
         </service>
         
