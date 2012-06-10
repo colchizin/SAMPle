@@ -7,23 +7,21 @@ import java.util.Random;
 import org.sample.musicfiles.FindMusicFilesTask;
 import org.sample.musicfiles.FindMusicFilesTask.MusicFilesFoundListener;
 import org.sample.musicfiles.MusicFile;
-import org.sample.musicfiles.MusicFileDBHelper;
 import org.sample.musicfiles.MusicFileDatasource;
 import org.sample.sensors.SensorReader;
 import org.sample.sensors.StepChangeListener;
 
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
-import android.os.IBinder;
-import android.os.PowerManager;
-import android.util.Log;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
+import android.os.IBinder;
+import android.os.PowerManager;
+import android.util.Log;
 
 public class MusicService extends Service implements
 		OnCompletionListener, OnErrorListener,

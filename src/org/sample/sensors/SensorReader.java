@@ -180,7 +180,7 @@ public class SensorReader implements SensorEventListener {
 		int start = n > mWindowSizeMovingAverage ? n-mWindowSizeMovingAverage : 0;
 		if (start > 0){
 			curMovingMean = curMovingMean - mSensorValues.get(start).value/mWindowSizeMovingAverage;
-			return ((float)(curMovingMean+mSensorValues.get(n-1).value)/mWindowSizeMovingAverage);
+			return ((float)(curMovingMean+mSensorValues.get(n-1).value/mWindowSizeMovingAverage));
 		}
 		else{
 			return ((float)((curMovingMean*(n-1)+mSensorValues.get(n-1).value)/n));
