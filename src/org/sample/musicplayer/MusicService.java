@@ -63,7 +63,7 @@ public class MusicService extends Service implements
     MusicFileDatasource datasource;
     
     enum State {
-        Waiting,	// the MediaRetriever is retrieving music
+        Retrieving,	// the MediaRetriever is retrieving music
         Stopped,    // media player is stopped and not prepared to play
         Preparing,  // media player is preparing...
         Playing,    // playback active (media player ready!). (but the media player may actually be
@@ -71,6 +71,10 @@ public class MusicService extends Service implements
                     // so that we know we have to resume playback once we get focus back)
         Paused      // playback paused (media player ready!)
     };
+    
+    protected State mState = State.Stopped;
+    protected boolean mStartPlayingAfterRetrieve;
+    protected String mWhatToPlayAfterRetrieve;
     
     void createMediaPlayerIfNeeded() {
         if (mMediaPlayer == null) {
@@ -93,22 +97,36 @@ public class MusicService extends Service implements
         	mMediaPlayer.reset();
     }
     
-    public int onStartCommand(Intent intent, int flags, int startid) { 
-    	Log.i(TAG, "debug: startup service");
+    
+    public int onStartCommand(Intent intent, int flags, int startId) {
+    	Log.i(TAG, "debug: start command service");
     	
-    	mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        mAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-        mSensorReader = new SensorReader(this,this);
-        datasource = new MusicFileDatasource(this);
-        mSensorReader.start();
-    	
-    	return this.START_NOT_STICKY;
+        String action = intent.getAction();
+        if (action.equals(ACTION_TOGGLE_PLAYBACK)) processTogglePlaybackRequest();
+        else if (action.equals(ACTION_PLAY)) processPlayRequest();
+        else if (action.equals(ACTION_PAUSE)) processPauseRequest();
+        else if (action.equals(ACTION_SKIP)) processSkipRequest();
+        else if (action.equals(ACTION_STOP)) processStopRequest();
+        else if (action.equals(ACTION_REWIND)) processRewindRequest();
+
+        return START_NOT_STICKY; // Means we started the service, but don't want it to
+                                 // restart in case it's killed.
     }
     
     public void onCreate() {
         Log.i(TAG, "debug: Creating service");
         
+        mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        mAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+        mSensorReader = new SensorReader(this,this);
+        datasource = new MusicFileDatasource(this);
+        mSensorReader.start();
         //mMediaButtonReceiverComponent = new ComponentName(this, MusicIntentReceiver.class);
+    }
+    
+
+    public void onDestroy() {   
+        Log.d(TAG, "debug: service destroyed");
     }
     
 	@Override
@@ -117,10 +135,6 @@ public class MusicService extends Service implements
 		return null;
 	}
 	
-	protected void processPlayRequest() {
-		
-	}
-
 	@Override
 	public void onPrepared(MediaPlayer mp) {
 		mp.start();
@@ -131,11 +145,104 @@ public class MusicService extends Service implements
 		// TODO Auto-generated method stub
 		return false;
 	}
+	
+	void processTogglePlaybackRequest() {
+        if (mState == State.Paused || mState == State.Stopped) {
+            processPlayRequest();
+        } else {
+            processPauseRequest();
+        }
+    }
+	
+	void processPlayRequest() {
+        if (mState == State.Retrieving) {
+            // If we are still retrieving media, just set the flag to start playing when we're
+            // ready
+            mWhatToPlayAfterRetrieve = null; // play a random song
+            mStartPlayingAfterRetrieve = true;
+            return;
+        }
+
+
+        // actually play the song
+
+        if (mState == State.Stopped) {
+            // If we're stopped, just go ahead to the next song and start playing
+            playNextSong(null);
+        }
+        else if (mState == State.Paused) {
+            // If we're paused, just continue playback and restore the 'foreground service' state.
+            mState = State.Playing;
+            //setUpAsForeground(mSongTitle + " (playing)");
+            //configAndStartMediaPlayer(); // TODO
+        }
+    }
+	
+	void processPauseRequest() {
+        if (mState == State.Retrieving) {
+            // If we are still retrieving media, clear the flag that indicates we should start
+            // playing when we're ready
+            mStartPlayingAfterRetrieve = false;
+            return;
+        }
+
+        if (mState == State.Playing) {
+            // Pause media player and cancel the 'foreground service' state.
+            mState = State.Paused;
+            mMediaPlayer.pause();
+            //relaxResources(false); // while paused, we always retain the MediaPlayer
+            // do not give up audio focus
+        }
+
+        // Tell any remote controls that our playback state is 'paused'.
+        //if (mRemoteControlClientCompat != null) {
+        //    mRemoteControlClientCompat
+        //            .setPlaybackState(RemoteControlClient.PLAYSTATE_PAUSED);
+        //}
+    }
+	
+	void processRewindRequest() {
+        if (mState == State.Playing || mState == State.Paused)
+            mMediaPlayer.seekTo(0);
+    }
+
+    void processSkipRequest() {
+        if (mState == State.Playing || mState == State.Paused) {
+            // tryToGetAudioFocus();
+            playNextSong(null);
+        }
+    }
+	
+	void processStopRequest() {
+        processStopRequest(false);
+    }
+	
+	void processStopRequest(boolean force) {
+        if (mState == State.Playing || mState == State.Paused || force) {
+            mState = State.Stopped;
+
+            // let go of all resources...
+            //relaxResources(true);
+            //giveUpAudioFocus();
+
+            // Tell any remote controls that our playback state is 'paused'.
+            //if (mRemoteControlClientCompat != null) {
+            //    mRemoteControlClientCompat
+            //            .setPlaybackState(RemoteControlClient.PLAYSTATE_STOPPED);
+            //}
+
+            // service is no longer necessary. Will be started again if needed.
+            stopSelf();
+        }
+    }
+	
+	public void playNextSong(String filename) {
+		
+	}
 
 	@Override
 	public void onCompletion(MediaPlayer mp) {
-		// TODO Auto-generated method stub
-		
+		playNextSong(null);	
 	}
 
 	@Override
@@ -201,8 +308,4 @@ public class MusicService extends Service implements
 				this
 		)).execute();
 	}
-
-    public void onDestroy() {   
-        Log.d(TAG, "debug: service destroyed");
-    }
 }
