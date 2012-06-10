@@ -127,18 +127,18 @@ public class MusicService extends Service implements
         Log.d(TAG, "debug: service destroyed");
     }
     
-	@Override
+	
 	public IBinder onBind(Intent arg0) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 	
-	@Override
+	
 	public void onPrepared(MediaPlayer mp) {
 		mp.start();
 	}
 
-	@Override
+	
 	public boolean onError(MediaPlayer mp, int what, int extra) {
 		// TODO Auto-generated method stub
 		return false;
@@ -238,12 +238,12 @@ public class MusicService extends Service implements
 		
 	}
 
-	@Override
+	
 	public void onCompletion(MediaPlayer mp) {
 		playNextSong(null);	
 	}
 
-	@Override
+	
 	public void onMusicFilesFound(List<MusicFile> files) {
 		Random random = new Random();
 		int size = files.size();
@@ -274,7 +274,7 @@ public class MusicService extends Service implements
 		}
 	}
 
-	@Override
+	
 	public void onStepChanged(int bpm) {
 		if (mLocked)
 			return;
