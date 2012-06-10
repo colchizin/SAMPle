@@ -51,7 +51,6 @@ public class NativePlayer implements MusicPlayer {
 				startVolume, audio, player, nextSong);
 
 		fOut.start();
-
 	}
 
 	public void pause() {

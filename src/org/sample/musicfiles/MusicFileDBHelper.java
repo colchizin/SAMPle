@@ -89,6 +89,7 @@ public class MusicFileDBHelper extends SQLiteOpenHelper {
 	}
 	
 	public static String getBPMCondition(int bpm, int tolerance) {
+		
 		String condition = MusicFileDBHelper.COLUMN_FILES_BPM + ">" + (bpm-tolerance) + " AND " +
 				MusicFileDBHelper.COLUMN_FILES_BPM + "<" + (bpm+tolerance);
 		return condition;

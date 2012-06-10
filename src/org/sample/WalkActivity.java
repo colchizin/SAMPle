@@ -1,13 +1,22 @@
 package org.sample;
 
 import org.sample.musicfiles.MP3File;
+import org.sample.musicfiles.MusicFile;
 import org.sample.musicplayer.MusicPlayer;
 import org.sample.musicplayer.MusicService;
 import org.sample.musicplayer.NativePlayer;
 
 import android.app.Activity;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.Binder;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageButton;
@@ -25,6 +34,10 @@ public class WalkActivity extends Activity implements OnClickListener {
 	private TextView spm_text;
 
 	private boolean isPlaying;
+	
+	MusicService mService;
+	private boolean mIsBound;
+	ServiceConnection mConnection;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -53,10 +66,11 @@ public class WalkActivity extends Activity implements OnClickListener {
 		Intent intent = new Intent(MusicService.ACTION_PLAY);
 		startService(intent);
 		isPlaying = true;
+		doBindService();
 	}
 
-	private void setInfo(MP3File song, int spm) {
-		artist_text.setText(song.title);
+	private void setInfo(MusicFile song, int spm) {
+		artist_text.setText(song.artist);
 		title_text.setText(song.title);
 		bpm_text.setText(String.valueOf(song.getBPM()));
 		spm_text.setText(String.valueOf(spm));		
@@ -83,6 +97,34 @@ public class WalkActivity extends Activity implements OnClickListener {
 			}
 		}
 
+	}
+	
+	void doBindService() {
+	    // Establish a connection with the service.  We use an explicit
+	    // class name because there is no reason to be able to let other
+	    // applications replace our component.
+		
+		mConnection = new ServiceConnection() {
+			public void onServiceConnected(ComponentName arg0, IBinder service) {
+				mService = ((MusicService.MusicServiceBinder)(service)).getService();
+				MusicFile currentFile = mService.getCurrentFile();
+				setInfo(currentFile, mService.getCurrentBPM());
+				
+				Log.i("WalkActivity", "Info set");
+			}
+
+			public void onServiceDisconnected(ComponentName arg0) {
+				Log.i("WalkActivity", "Service disconnected");
+				mService = null;
+			}
+		};
+		
+	    this.bindService(
+	    		new Intent(MusicService.ACTION_PREPARE),
+	    		mConnection, Context.BIND_AUTO_CREATE
+	    );
+	    mIsBound = true;
+	    Log.i("WalkActivity", "Service boud");
 	}
 
 }

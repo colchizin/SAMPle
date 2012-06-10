@@ -20,6 +20,7 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
+import android.os.Binder;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
@@ -46,6 +47,7 @@ public class MusicService extends Service implements
     
     List<MusicFile> mCurrentFiles = null;
     MusicFile mNextFile = null;
+    MusicFile mCurrentFile = null;
     SensorReader mSensorReader;
     
     public static final int notificationID = 1;
@@ -54,7 +56,7 @@ public class MusicService extends Service implements
     long lastChangeTimestamp;
     boolean mLocked = false;
     
-    final int songSwitchThreshold = 30000;
+    final int songSwitchThreshold = 10000;
     final float stepThreshold = 0.1f;
     
     // The component name of MusicIntentReceiver, for use with media button and remote control
@@ -76,6 +78,8 @@ public class MusicService extends Service implements
     protected State mState = State.Stopped;
     protected boolean mStartPlayingAfterRetrieve;
     protected String mWhatToPlayAfterRetrieve;
+    
+    private final IBinder mBinder = new MusicServiceBinder();
     
     void createMediaPlayerIfNeeded() {
         if (mMediaPlayer == null) {
@@ -133,8 +137,7 @@ public class MusicService extends Service implements
     }
     
 	public IBinder onBind(Intent arg0) {
-		// TODO Auto-generated method stub
-		return null;
+		return mBinder;
 	}
 	
 	/*
@@ -272,6 +275,7 @@ public class MusicService extends Service implements
 				playRandomSong();
 			else {
 				setState(State.Retrieving);
+				mCurrentFile = mNextFile;
 				(new FindMusicFilesTask(
 						this.datasource,
 						null, //MusicFileDBHelper.getBPMCondition(bpm, 10),
@@ -283,7 +287,13 @@ public class MusicService extends Service implements
 	
 	public void play() {
 		try {
-			mMediaPlayer.setDataSource(mNextFile.getFilename());
+			mCurrentFile = mNextFile;
+			if (mCurrentFile == null) {
+				Log.e(TAG, "Null fill");
+				return;
+			}
+			
+			mMediaPlayer.setDataSource(mCurrentFile.getFilename());
 			mMediaPlayer.prepareAsync();
 			mLocked = false;
 		} catch (IllegalArgumentException e) {
@@ -366,8 +376,22 @@ public class MusicService extends Service implements
 		)).execute();
 	}
 	
+	public MusicFile getCurrentFile() {
+		return this.mNextFile;
+	}
+	
+	public int getCurrentBPM() {
+		return this.lastBPM;
+	}
+	
 	protected void setState(State s) {
 		Log.d(TAG, "[State Changed] Old State :" + mState + ", New State: " + s);
 		this.mState = s;
+	}
+	
+	public class MusicServiceBinder extends Binder {
+		public MusicService getService() {
+			return MusicService.this;
+		}
 	}
 }
