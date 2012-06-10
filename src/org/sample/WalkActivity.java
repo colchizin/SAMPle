@@ -8,10 +8,8 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
 public class WalkActivity extends Activity implements OnClickListener {
 
@@ -44,17 +42,21 @@ public class WalkActivity extends Activity implements OnClickListener {
 		music = new NativePlayer(this);
 
 		MP3File song = new MP3File("/sdcard/Kalimba.mp3");
-		setInfo(song);
+		song.title="Der Titel";
+		song.artist="der künstler";
+		song.setBPM(235);
+		
+		setInfo(song,0);
 		music.play(song);
 		isPlaying = true;
 
 	}
 
-	private void setInfo(MP3File song) {
+	private void setInfo(MP3File song, int spm) {
 		artist_text.setText(song.title);
 		title_text.setText(song.title);
 		bpm_text.setText(String.valueOf(song.getBPM()));
-		spm_text.setText("");		
+		spm_text.setText(String.valueOf(spm));		
 	}
 
 	public void onClick(View v) {
