@@ -118,6 +118,7 @@ public class MusicFileDatasource extends Datasource {
 		if (deep)
 			tagSource = new TagDatasource(context);
 		
+		Log.d(TAG, "Query findAll: " + condition);
 		Cursor cursor = database.query(
 			MusicFileDBHelper.TABLE_FILES,
 			fileColumns,

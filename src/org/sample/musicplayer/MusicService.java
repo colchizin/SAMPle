@@ -143,8 +143,8 @@ public class MusicService extends Service implements
 	 * @see android.media.MediaPlayer.OnPreparedListener#onPrepared(android.media.MediaPlayer)
 	 */
 	public void onPrepared(MediaPlayer mp) {
-		mp.start();
 		setState(State.Playing);
+		mMediaPlayer.start();
 	}
 
 	public boolean onError(MediaPlayer mp, int what, int extra) {
@@ -306,20 +306,23 @@ public class MusicService extends Service implements
 		Random random = new Random();
 		int size = mCurrentFiles.size();
 		
-		if (size > 0) {
-			int rand = random.nextInt(size);
-			mNextFile = mCurrentFiles.get(rand);
-			Log.d(TAG, "Next file is " + mNextFile.getFilename());
-			
-			createMediaPlayerIfNeeded();
-			
-			if (mMediaPlayer.isPlaying()) {
-				mMediaPlayer.stop();
-			}
-			
-			if (this.mStartPlayingAfterRetrieve) {
-				play();
-			}
+		if (size == 0) {
+			Log.w(TAG, "Song-Liste ist leer");
+			return;
+		}
+		
+		int rand = random.nextInt(size);
+		mNextFile = mCurrentFiles.get(rand);
+		Log.d(TAG, "Next file is " + mNextFile.getFilename());
+		
+		createMediaPlayerIfNeeded();
+		
+		if (mMediaPlayer.isPlaying()) {
+			mMediaPlayer.stop();
+		}
+		
+		if (this.mStartPlayingAfterRetrieve) {
+			play();
 		}
 	}
 	
@@ -327,6 +330,7 @@ public class MusicService extends Service implements
 		mLocked = false;
 		this.mCurrentFiles = files;
 		setState(State.Stopped);
+		Log.d(TAG, "Next: Zufälligen Song abspielen");
 		playRandomSong();
 	}
 
@@ -340,13 +344,13 @@ public class MusicService extends Service implements
 		long now = System.currentTimeMillis();
 		
 		if ((now-this.lastChangeTimestamp) < this.songSwitchThreshold) {
-			//Log.d(TAG, "Too little Time has passed. " + Math.round((now-this.lastChangeTimestamp)/1000) + "s");
+			Log.d(TAG, "Too little Time has passed. " + Math.round((now-this.lastChangeTimestamp)/1000) + "s");
 			mLocked = false;
 			return;
 		}
 			
 		if (bpm <= upperThreshold && bpm >= lowerThreshold) {
-			//Log.d(TAG, "Step not sufficiently changed. " + bpm + " " + upperThreshold + " " + lowerThreshold);
+			Log.d(TAG, "Step not sufficiently changed. " + bpm + " " + upperThreshold + " " + lowerThreshold);
 			mLocked = false;
 			return;
 		}

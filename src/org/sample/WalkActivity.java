@@ -45,7 +45,7 @@ public class WalkActivity extends Activity implements OnClickListener {
 
 		MP3File song = new MP3File("/sdcard/Kalimba.mp3");
 		song.title="Der Titel";
-		song.artist="der künstler";
+		song.artist="der kï¿½nstler";
 		song.setBPM(235);
 		
 		setInfo(song,0);
@@ -66,7 +66,7 @@ public class WalkActivity extends Activity implements OnClickListener {
 		if (v.getId() == R.id.button_skip) {
 			// Select another bpm-fitting song
 			MP3File nextSong = new MP3File("/sdcard/SleepAway.mp3");
-			music.fadeIn(6000, nextSong);
+			// music.fadeIn(6000, nextSong);
 
 		} else if (v.getId() == R.id.button_pause) {
 			
