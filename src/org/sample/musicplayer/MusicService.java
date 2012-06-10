@@ -32,18 +32,20 @@ public class MusicService extends Service implements
 		StepChangeListener {
 	final static String TAG = "SAMPleMusicService";
 	
-	public static final String ACTION_PLAY = "com.sample.musicplayer.action.PLAY";
-	public static final String ACTION_TOGGLE_PLAYBACK = "com.sample.musicplayer.action.TOGGLE_PLAYBACK";
-    public static final String ACTION_PAUSE = "com.sample.musicplayer.action.PAUSE";
-    public static final String ACTION_STOP = "com.sample.musicplayer.action.STOP";
-    public static final String ACTION_SKIP = "com.sample.musicplayer.action.SKIP";
-    public static final String ACTION_REWIND = "com.sample.musicplayer.action.REWIND";
-    public static final String ACTION_URL = "com.sample.musicplayer.action.URL";
+	public static final String ACTION_PLAY = "com.sample.musicservice.action.PLAY";
+	public static final String ACTION_TOGGLE_PLAYBACK = "com.sample.musicservice.action.TOGGLE_PLAYBACK";
+    public static final String ACTION_PAUSE = "com.sample.musicservice.action.PAUSE";
+    public static final String ACTION_STOP = "com.sample.musicservice.action.STOP";
+    public static final String ACTION_SKIP = "com.sample.musicservice.action.SKIP";
+    public static final String ACTION_REWIND = "com.sample.musicservice.action.REWIND";
+    public static final String ACTION_URL = "com.sample.musicservice.action.URL";
+    public static final String ACTION_PREPARE = "com.sample.musicservice.action.PREPARE";
     
     MediaPlayer mMediaPlayer = null;
     NotificationManager mNotificationManager = null;
     AudioManager mAudioManager = null;
     
+    List<MusicFile> mCurrentFiles = null;
     MusicFile mNextFile = null;
     SensorReader mSensorReader;
     
@@ -108,6 +110,7 @@ public class MusicService extends Service implements
         else if (action.equals(ACTION_SKIP)) processSkipRequest();
         else if (action.equals(ACTION_STOP)) processStopRequest();
         else if (action.equals(ACTION_REWIND)) processRewindRequest();
+        else if (action.equals(ACTION_PREPARE)) processPrepareRequest();
 
         return START_NOT_STICKY; // Means we started the service, but don't want it to
                                  // restart in case it's killed.
@@ -120,6 +123,7 @@ public class MusicService extends Service implements
         mAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         mSensorReader = new SensorReader(this,this);
         datasource = new MusicFileDatasource(this);
+        this.lastChangeTimestamp = System.currentTimeMillis();
         mSensorReader.start();
         //mMediaButtonReceiverComponent = new ComponentName(this, MusicIntentReceiver.class);
     }
@@ -129,18 +133,16 @@ public class MusicService extends Service implements
         Log.d(TAG, "debug: service destroyed");
     }
     
-	@Override
 	public IBinder onBind(Intent arg0) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 	
-	@Override
 	public void onPrepared(MediaPlayer mp) {
 		mp.start();
+		this.mState = State.Playing;
 	}
 
-	@Override
 	public boolean onError(MediaPlayer mp, int what, int extra) {
 		// TODO Auto-generated method stub
 		return false;
@@ -158,21 +160,21 @@ public class MusicService extends Service implements
         if (mState == State.Retrieving) {
             // If we are still retrieving media, just set the flag to start playing when we're
             // ready
-            mWhatToPlayAfterRetrieve = null; // play a random song
             mStartPlayingAfterRetrieve = true;
             return;
         }
-
 
         // actually play the song
 
         if (mState == State.Stopped) {
             // If we're stopped, just go ahead to the next song and start playing
-            playNextSong(null);
+        	playNextSong(null);
         }
         else if (mState == State.Paused) {
             // If we're paused, just continue playback and restore the 'foreground service' state.
+        	
             mState = State.Playing;
+            mMediaPlayer.start();
             //setUpAsForeground(mSongTitle + " (playing)");
             //configAndStartMediaPlayer(); // TODO
         }
@@ -236,22 +238,59 @@ public class MusicService extends Service implements
         }
     }
 	
+	public void processPrepareRequest() {
+		this.mState = State.Retrieving;
+		this.mStartPlayingAfterRetrieve = false;
+		(new FindMusicFilesTask(
+				this.datasource,
+				null, //MusicFileDBHelper.getBPMCondition(bpm, 10),
+				this
+		)).execute();
+	}
+	
 	public void playNextSong(String filename) {
-		
+		if (filename == null) {
+			if (this.mCurrentFiles != null)
+				playRandomSong();
+			else {
+				(new FindMusicFilesTask(
+						this.datasource,
+						null, //MusicFileDBHelper.getBPMCondition(bpm, 10),
+						this
+				)).execute();
+			}
+		}
+	}
+	
+	public void play() {
+		try {
+			mMediaPlayer.setDataSource(mNextFile.getFilename());
+			mMediaPlayer.prepareAsync();
+			mLocked = false;
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalStateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
-	@Override
 	public void onCompletion(MediaPlayer mp) {
 		playNextSong(null);	
 	}
 
-	@Override
-	public void onMusicFilesFound(List<MusicFile> files) {
+	public void playRandomSong() {
 		Random random = new Random();
-		int size = files.size();
+		int size = mCurrentFiles.size();
+		
 		if (size > 0) {
-			int rand = random.nextInt(files.size());
-			mNextFile = files.get(rand);
+			int rand = random.nextInt(size);
+			mNextFile = mCurrentFiles.get(rand);
+			Log.d(TAG, "Next file is " + mNextFile.getFilename());
 			
 			createMediaPlayerIfNeeded();
 			
@@ -259,24 +298,20 @@ public class MusicService extends Service implements
 				mMediaPlayer.stop();
 			}
 			
-			try {
-				mMediaPlayer.setDataSource(mNextFile.getFilename());
-				mMediaPlayer.prepareAsync();
-				mLocked = false;
-			} catch (IllegalArgumentException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IllegalStateException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			if (this.mStartPlayingAfterRetrieve) {
+				play();
+			} else {
+				this.mState = State.Stopped;
 			}
 		}
 	}
+	
+	public void onMusicFilesFound(List<MusicFile> files) {
+		mLocked = false;
+		this.mCurrentFiles = files;
+		playRandomSong();
+	}
 
-	@Override
 	public void onStepChanged(int bpm) {
 		if (mLocked)
 			return;
@@ -304,7 +339,7 @@ public class MusicService extends Service implements
 		
 		(new FindMusicFilesTask(
 				this.datasource,
-				null, //MusicFileDBHelper.getBPMCondition(bpm, 10),
+				MusicFileDBHelper.getBPMCondition(bpm, 10),
 				this
 		)).execute();
 	}
