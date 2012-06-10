@@ -63,10 +63,19 @@ public class MusicfilesActivity extends Activity implements
 		});
 		
 		Button stop = (Button)(this.findViewById(R.id.button_stop));
-		pause.setOnClickListener(new OnClickListener() {
+		stop.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
 				Intent intent = new Intent(MusicService.ACTION_STOP);
+				startService(intent);
+			}
+		});
+		
+		Button next = (Button)(this.findViewById(R.id.button_next));
+		next.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				Intent intent = new Intent(MusicService.ACTION_SKIP);
 				startService(intent);
 			}
 		});
