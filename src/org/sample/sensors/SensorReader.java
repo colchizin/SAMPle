@@ -39,6 +39,7 @@ public class SensorReader implements SensorEventListener {
     private Context mContext;
     
     private float mExponentialMovingAverage;
+    private float movingAverageOpt;
     private final float mAlpha = (float) 0.2;
     private final int mWindowSizeMovingAverage = 100;
     private final double mTimeInterval = 10; // in seconds
@@ -66,8 +67,10 @@ public class SensorReader implements SensorEventListener {
         // listener
         mStepChangeListener = listener;
         
-        // alpha for EWMA
+        // initialization for exponential average
         mExponentialMovingAverage = 100; // g = 9.81 => g^2 ca. 100
+        
+        movingAverageOpt = 0;
         
         // timestamp for last StepChanged::onStepChanged
         mLastChangedSend = 0;
@@ -108,7 +111,7 @@ public class SensorReader implements SensorEventListener {
             return;
         }
 
-        // calculate scalar 
+        // calculate scalar norm of acelleration vector
         float scalar = event.values[0]*event.values[0] + // x
         			   event.values[1]*event.values[1] + // y
         			   event.values[2]*event.values[2]; // z
@@ -122,14 +125,16 @@ public class SensorReader implements SensorEventListener {
         mSensorValues.add(entry);
         
         // const window size for moving average 
+        movingAverageOpt = movingMeanOpt(movingAverageOpt);
         float movingAverage = movingMean();
+        
         checkSignChange(movingAverage);
         
         int steps=countSteps();
         
         // DEBUG ONLY
-        //Log.i("SensorReader", entry.timestamp + ":" + String.valueOf(entry.value) + ", steps: "
-        //		+ String.valueOf(steps));
+        Log.i("SensorReader", entry.timestamp + ":" + String.valueOf(entry.value) + ", steps: "
+        	+ String.valueOf(steps) +":" + String.valueOf(movingAverageOpt) + ":" + String.valueOf(movingAverage));
         /*
         try {
         	mLogStream = new FileWriter(mLogFile, true);
@@ -155,7 +160,7 @@ public class SensorReader implements SensorEventListener {
 	}
 	
 	/**
-	 * calculate movingMean
+	 * calculate movingMean of the previous m values
 	 */
 	private float movingMean() {
 		Float sum = (float)0;
@@ -166,6 +171,21 @@ public class SensorReader implements SensorEventListener {
 		}
 		return ((float)(sum/(n-start)));
 	}
+	
+	/**
+	 * compute the moving mean without loops by updating
+	 */
+	private float movingMeanOpt(float curMovingMean){
+		int n = mSensorValues.size();
+		int start = n > mWindowSizeMovingAverage ? n-mWindowSizeMovingAverage : 0;
+		if (start > 0){
+			curMovingMean = curMovingMean - mSensorValues.get(start).value/mWindowSizeMovingAverage;
+			return ((float)(curMovingMean+mSensorValues.get(n-1).value)/mWindowSizeMovingAverage);
+		}
+		else{
+			return ((float)((curMovingMean*(n-1)+mSensorValues.get(n-1).value)/n));
+		}
+		}
 	
 	/**
 	 * calculate exponential weighted moving average
@@ -184,6 +204,7 @@ public class SensorReader implements SensorEventListener {
 		float post = ewma(mSensorValues.get(n-1).value) - movingAverage;
 		
 		mSensorValues.get(n-1).sign = Math.abs(( Math.abs(pre+post) - Math.abs(pre) - Math.abs(post) )) > 0.001 &&
+				// zero iff pre and post have the same sign
 				movingAverage > mGravityThreshold;
 	}
 	
