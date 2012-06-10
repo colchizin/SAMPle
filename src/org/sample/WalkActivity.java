@@ -2,9 +2,11 @@ package org.sample;
 
 import org.sample.musicfiles.MP3File;
 import org.sample.musicplayer.MusicPlayer;
+import org.sample.musicplayer.MusicService;
 import org.sample.musicplayer.NativePlayer;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -47,9 +49,10 @@ public class WalkActivity extends Activity implements OnClickListener {
 		song.setBPM(235);
 		
 		setInfo(song,0);
-		music.play(song);
+		//music.play(song);
+		Intent intent = new Intent(MusicService.ACTION_PLAY);
+		startService(intent);
 		isPlaying = true;
-
 	}
 
 	private void setInfo(MP3File song, int spm) {
@@ -66,12 +69,15 @@ public class WalkActivity extends Activity implements OnClickListener {
 			music.fadeIn(6000, nextSong);
 
 		} else if (v.getId() == R.id.button_pause) {
+			
 			if(isPlaying){
-				music.pause();
+				Intent intent = new Intent(MusicService.ACTION_PAUSE);
+				startService(intent);
 				pauseButton.setImageDrawable(getResources().getDrawable(android.R.drawable.ic_media_play));
 				isPlaying=false;
 			}else{
-				music.resume();
+				Intent intent = new Intent(MusicService.ACTION_PLAY);
+				startService(intent);
 				pauseButton.setImageDrawable(getResources().getDrawable(android.R.drawable.ic_media_pause));
 				isPlaying=true;
 			}

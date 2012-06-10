@@ -1,5 +1,7 @@
 package org.sample;
 
+import org.sample.musicplayer.MusicService;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -15,7 +17,10 @@ public class SAMPleActivity extends Activity implements OnClickListener{
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.start);        
+        setContentView(R.layout.start);
+        
+        Intent intent = new Intent(MusicService.ACTION_PREPARE);
+        startService(intent);
         
         goButton=(Button) findViewById(R.id.button_go);
         goButton.setOnClickListener(this);
