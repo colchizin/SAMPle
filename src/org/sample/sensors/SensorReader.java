@@ -46,10 +46,11 @@ public class SensorReader implements SensorEventListener {
     private final double mStepSendInterval = 2; // in seconds
     
     private long mLastChangedSend;
+    private int mNumberOfChangedSigns;
     
     // TO DEBUG
-    private File mLogFile;
-    private FileWriter mLogStream; 
+    //private File mLogFile;
+    //private FileWriter mLogStream; 
 
     /**
      * Ctor
@@ -71,6 +72,9 @@ public class SensorReader implements SensorEventListener {
         
         // timestamp for last StepChanged::onStepChanged
         mLastChangedSend = 0;
+        
+        // store number of sign changes
+        mNumberOfChangedSigns = 0;
         
         // DEBUG
         //File root = Environment.getExternalStorageDirectory();
@@ -125,9 +129,10 @@ public class SensorReader implements SensorEventListener {
         float movingAverage = movingMean();
         checkSignChange(movingAverage);
         
-        int steps=countSteps();
-        
+        countSteps();
         // DEBUG ONLY
+        //int steps=countSteps();
+        
         //Log.i("SensorReader", entry.timestamp + ":" + String.valueOf(entry.value) + ", steps: "
         //		+ String.valueOf(steps));
         /*
@@ -186,8 +191,14 @@ public class SensorReader implements SensorEventListener {
 		float pre = mExponentialMovingAverage - movingAverage;
 		float post = ewma(mSensorValues.get(n-1).value) - movingAverage;
 		
-		mSensorValues.get(n-1).sign = Math.abs(( Math.abs(pre+post) - Math.abs(pre) - Math.abs(post) )) > 0.001 &&
+		boolean isSignChanged = Math.abs(( Math.abs(pre+post) - Math.abs(pre) - Math.abs(post) )) > 0.001 &&
 				movingAverage > mGravityThreshold;
+				
+		mSensorValues.get(n-1).sign = isSignChanged;
+		
+		if (isSignChanged) {
+			mNumberOfChangedSigns+=1;
+		}
 	}
 	
 	/**
@@ -204,12 +215,12 @@ public class SensorReader implements SensorEventListener {
 		
 		if (deltaTime > mTimeInterval) {
 			//Log.i("> mTimeInterval", String.valueOf(deltaTime));
-			for (int i=0; i<n; ++i) {
+			/*for (int i=0; i<n; ++i) {
 				if (mSensorValues.get(i).sign) {
 					steps+=1;
 				}
-			}
-			steps /= 2; // 2 Null-Durchgänge je Schritt
+			}*/
+			steps = mNumberOfChangedSigns/2; // 2 Null-Durchgänge je Schritt
 			steps *= (int)Math.ceil(60/mTimeInterval);
 			
 			// don't send every change
@@ -218,6 +229,10 @@ public class SensorReader implements SensorEventListener {
 				mLastChangedSend = currentTimeStamp;
 				mStepChangeListener.onStepChanged(steps);
 				//Log.i("StepChangeListener", "onChanged");
+			}
+			
+			if (mSensorValues.get(0).sign) {
+				mNumberOfChangedSigns-=1;
 			}
 			
 			mSensorValues.poll();
