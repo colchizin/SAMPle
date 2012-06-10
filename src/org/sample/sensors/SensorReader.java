@@ -130,14 +130,17 @@ public class SensorReader implements SensorEventListener {
         
         // const window size for moving average 
         movingAverageOpt = movingMeanOpt(movingAverageOpt);
-        float movingAverage = movingMean();
+        //float movingAverage = movingMean();
         
-        checkSignChange(movingAverage);
+        //checkSignChange(movingAverage);
+        checkSignChange(movingAverageOpt);
         
-        int steps = countSteps();
+        countSteps();
         // DEBUG ONLY
-        Log.i("SensorReader", entry.timestamp + ":" + String.valueOf(entry.value) + ", steps: "
-        	+ String.valueOf(steps) +":" + String.valueOf(movingAverageOpt) + ":" + String.valueOf(movingAverage));
+        //int steps = countSteps();
+        //Log.i("SensorReader", entry.timestamp + ":" + String.valueOf(entry.value) + ", steps: "
+        //	+ String.valueOf(steps) +":" + String.valueOf(movingAverageOpt));
+        // + ":" + String.valueOf(movingAverage));
         
         /*
         try {
@@ -186,7 +189,7 @@ public class SensorReader implements SensorEventListener {
 		int n = mSensorValues.size();
 		int start = n > mWindowSizeMovingAverage ? n-mWindowSizeMovingAverage : 0;
 		if (start > 0){
-			curMovingMean = curMovingMean - mSensorValues.get(start).value/mWindowSizeMovingAverage;
+			curMovingMean = curMovingMean - mSensorValues.get(start-1).value/mWindowSizeMovingAverage;
 			return ((float)(curMovingMean+mSensorValues.get(n-1).value/mWindowSizeMovingAverage));
 		}
 		else{
