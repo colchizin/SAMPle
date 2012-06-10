@@ -25,8 +25,7 @@
     <Button
         android:id="@+id/button_go"
         android:layout_width="89dp"
-        android:layout_height="73dp"
-        android:onClick="onbutton_go"
+        android:layout_height="73dp" 
         android:text="@string/go" />
 
     <TextView

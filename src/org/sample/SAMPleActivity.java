@@ -1,9 +1,5 @@
 package org.sample;
 
-import org.sample.musicfiles.MP3File;
-import org.sample.musicplayer.MusicPlayer;
-import org.sample.musicplayer.SoundPoolPlayer;
-
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -11,7 +7,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 
-public class SAMPleActivity extends Activity implements OnClickListener {
+public class SAMPleActivity extends Activity implements OnClickListener{
     
 	private Button goButton;
 	
@@ -23,7 +19,6 @@ public class SAMPleActivity extends Activity implements OnClickListener {
         
         goButton=(Button) findViewById(R.id.button_go);
         goButton.setOnClickListener(this);
-        
     }
 
 	public void onClick(View arg0) {
